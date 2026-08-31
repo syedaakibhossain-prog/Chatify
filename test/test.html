@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatify Test</title>
+</head>
+
+<body>
+
+    <input id="message" placeholder="Message">
+    <button onclick="sendMessage()">Send</button>
+
+    <pre id="output"></pre>
+
+    <script>
+
+        const conversessionId =
+            "b093df28-cb0a-41f3-a658-c8894c05f769";
+
+        const socket = new WebSocket(
+            `ws://127.0.0.1:8000/ws/conversession/${conversessionId}`
+        );
+
+        socket.onopen = () => {
+            console.log("Connected");
+        };
+
+        socket.onmessage = (event) => {
+
+            console.log("RECEIVED:", event.data);
+
+            const output =
+                document.getElementById("output");
+
+            try {
+                const parsed = JSON.parse(event.data);
+
+                if (parsed.type === "message") {
+                    output.textContent +=
+                        "[" + parsed.data.sender_id.slice(0, 8) + "]: "
+                        + parsed.data.content + "\n";
+                } else if (parsed.type === "error") {
+                    output.textContent +=
+                        "[ERROR]: " + parsed.detail + "\n";
+                } else {
+                    output.textContent +=
+                        JSON.stringify(parsed) + "\n";
+                }
+            } catch (e) {
+                output.textContent += event.data + "\n";
+            }
+        };
+
+        socket.onerror = (error) => {
+            console.error("WebSocket ERROR:", error);
+        };
+
+        socket.onclose = (event) => {
+            console.log(
+                "Disconnected",
+                event.code,
+                event.reason
+            );
+        };
+
+        function sendMessage() {
+
+            const input =
+                document.getElementById("message");
+
+            if (socket.readyState !== WebSocket.OPEN) {
+                console.log("Socket is not open");
+                return;
+            }
+
+            const message = {
+                type: "message",
+                content: input.value
+            };
+
+            console.log("SENDING:", message);
+
+            socket.send(
+                JSON.stringify(message)
+            );
+
+            input.value = "";
+        }
+
+    </script>
+
+</body>
+
+</html>
