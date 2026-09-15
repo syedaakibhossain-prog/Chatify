@@ -1,8 +1,8 @@
 from pydantic import (
+    UUID4,
     BaseModel,
     EmailStr,
     Field,
-    UUID4,
 )
 
 

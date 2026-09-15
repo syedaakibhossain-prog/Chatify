@@ -6,26 +6,20 @@ from fastapi import (
     Response,
     status,
 )
-
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.database import get_db
-from src.dependences import get_user
-
-from src.authentication.schemas import (
-    UserRequest,
-    LoginRequest,
-    UserResponse,
-)
-
-from src.authentication.service import (
-    AuthService,
-)
-
 from src.authentication.reposetory import (
     UserRepository,
 )
-
+from src.authentication.schemas import (
+    LoginRequest,
+    UserRequest,
+    UserResponse,
+)
+from src.authentication.service import (
+    AuthService,
+)
+from src.database import get_db
+from src.dependences import get_user
 
 router = APIRouter(
     prefix="/auth",
@@ -200,7 +194,6 @@ async def logout(
         key="refresh_token",
     )
 
-    return None
 
 
 

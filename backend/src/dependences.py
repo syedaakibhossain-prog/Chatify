@@ -6,21 +6,15 @@ from fastapi import (
     HTTPException,
     status,
 )
-
-from jose import JWTError
-
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.database import get_db
-from src.model import User
-
 from src.authentication.reposetory import (
     UserRepository,
 )
-
 from src.authentication.utiles import (
     verify_access_token,
 )
+from src.database import get_db
+from src.model import User
 
 
 async def get_user(
