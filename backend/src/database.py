@@ -3,9 +3,8 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-
-from src.config import settings
 from sqlalchemy.orm import DeclarativeBase
+from src.config import settings
 
 
 class BaseModel(DeclarativeBase):
