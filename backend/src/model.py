@@ -34,8 +34,8 @@ class Conversation(BaseModel):
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True
     )
-    is_group: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    title: Mapped[str | None] = mapped_column(String(80), nullable=True)  # for groups
+    # is_group: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # title: Mapped[str | None] = mapped_column(String(80), nullable=True)  # for groups
 
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
