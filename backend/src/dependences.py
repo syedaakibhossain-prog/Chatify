@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 from fastapi import (
     Cookie,
@@ -16,19 +17,33 @@ from src.authentication.utiles import (
 from src.database import get_db
 from src.model import User
 
+Dbsession = Annotated[AsyncSession , Depends(get_db)]
+
+
+
 
 async def get_user(
+    db:Dbsession,
     access_token: str | None = Cookie(
         default=None
-    ),
-    db: AsyncSession = Depends(get_db),
+    )
+) -> User | None:
+
+    return await resolve_user_from_token(
+        db,
+        access_token
+    )
+
+
+async def resolve_user_from_token(
+    db:AsyncSession,
+    access_token:str | None
 ) -> User:
 
     if not access_token:
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
+            detail="ACCESS TOKEN DOES NOT PROVIEDED"
         )
 
     payload = verify_access_token(
