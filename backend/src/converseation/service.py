@@ -91,12 +91,12 @@ class ConversationService:
     # @dec: get the conversation list for user from acces_token
     # @parameter:db
     # @parameter:access_token
-    # @return:liat[Conversation]
+    # @return:liat[Conversation.id]
     async def get_coversation_list(
         self,
         db:AsyncSession,
         access_token:str
-    ) -> list[Conversation] | None:
+    ) -> list[uuid.UUID] | None:
 
         is_user = await resolve_user_from_token(
             db,
@@ -108,3 +108,38 @@ class ConversationService:
             is_user.id
         )
         return res
+    async def is_member(
+        self,
+        db:AsyncSession,
+        conversation_id:uuid.UUID,
+        user_id:uuid.UUID
+    ) -> bool :
+
+        return await self.repo.is_member(
+            db,
+            conversation_id,
+            user_id
+        )
+
+    async def get_conversation_ids_for_user(
+        self,
+        db:AsyncSession,
+        user_id:uuid.UUID
+    ) -> list[uuid.UUID]:
+
+        return await self.repo.get_conversation_list(
+            db,
+            user_id
+        )
+
+    async def mark_conversation_read(
+        self,
+        db : AsyncSession,
+        conversation_id : uuid.UUID,
+        user_id : uuid.UUID
+    ) -> None :
+        await self.repo.mark_conversation_read(
+            db,
+            conversation_id,
+            user_id
+        )
