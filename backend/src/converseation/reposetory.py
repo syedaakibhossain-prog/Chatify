@@ -1,9 +1,8 @@
 import uuid
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from src.model import Conversation, Member
+from src.model import Conversation, Member, Message
 
 
 class ConversetionRepo:
@@ -22,6 +21,7 @@ class ConversetionRepo:
             for uid in user_ids
         )
         await db.commit()
+        await db.refresh(conv)
         return conv
 
     async def is_member(
@@ -66,14 +66,33 @@ class ConversetionRepo:
         self,
         db:AsyncSession,
         user_id:uuid.UUID
-    ) ->list[Conversation] | None:
+    ) ->list[uuid.UUID] | None:
 
         query = await db.execute(
-            select(Conversation)
+            select(Conversation.id)
             .join(Member, Member.conversation_id == Conversation.id)
             .where(Member.user_id == user_id)
-            .options(selectinload(Conversation.members).selectinload(Member.user))
             .order_by(Conversation.updated_at.desc())
         )
-        res = query.scalars().unique().all()
+        res = query.scalars().all()
         return list(res)
+
+    async def mark_conversation_read(
+        self,
+        db : AsyncSession,
+        conversation_id : uuid.UUID,
+        user_id : uuid.UUID
+    ) -> None :
+
+        await db.execute(
+            update(Message)
+            .where(
+                and_(
+                    Message.conversation_id == conversation_id,
+                    Message.sender_id != user_id,
+                    Message.is_read == False
+                )
+            )
+            .values(is_read = True)
+        )
+        await db.commit()

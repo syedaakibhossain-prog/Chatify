@@ -81,3 +81,24 @@ class MessageService:
         )
 
         return res
+
+    # Create a message directly (for WebSocket handler where user is already authenticated)
+    async def create_message(
+        self,
+        db : AsyncSession,
+        conversation_id : uuid.UUID,
+        sender_id : uuid.UUID,
+        content : str,
+    ) -> MessageOut:
+        payload = CreateMessage(content=content)
+        message = Message(
+            conversation_id=conversation_id,
+            sender_id=sender_id,
+            content=payload.content
+        )
+
+        res = await self.message_repo.send_message(
+            db,
+            message
+        )
+        return res

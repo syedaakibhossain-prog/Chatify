@@ -6,6 +6,7 @@ from src.authentication.routes import router as auth_router
 from src.converseation.router import router as conversation_router
 from src.database import BaseModel, engine
 from src.message.router import router as message_router
+from src.realtime.router import router as realtime_router
 from src.user.router import router as user_router
 
 
@@ -38,7 +39,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(conversation_router)
 app.include_router(message_router)
-
+app.include_router(realtime_router)
 
 @app.get("/")
 def root():
