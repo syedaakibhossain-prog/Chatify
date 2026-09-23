@@ -71,7 +71,10 @@ export default function ChatPage() {
               </div>
               <div>
                 <div className="chat-header-name">{chatPartnerName}</div>
-                <div className="chat-header-status">Online</div>
+                <div className="chat-header-status">
+                  <span className="status-dot" />
+                  Online
+                </div>
               </div>
             </div>
 

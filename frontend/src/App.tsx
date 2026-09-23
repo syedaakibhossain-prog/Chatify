@@ -10,7 +10,8 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 
   if (status === "idle" || status === "loading") {
     return (
-      <div className="flex h-full items-center justify-center text-gray-500">
+      <div className="loading-screen">
+        <div className="spinner" />
         Loading…
       </div>
     );
