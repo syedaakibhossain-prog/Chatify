@@ -12,7 +12,7 @@ from src.user.reposetory import UserRepo
 from src.user.service import UserService
 
 router = APIRouter(
-    prefix="/conversation",
+    prefix="/api/v1/conversation",
     tags=["conversation"]
 )
 

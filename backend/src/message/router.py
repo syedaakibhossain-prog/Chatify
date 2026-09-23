@@ -9,7 +9,7 @@ from src.message.schemas import Messages
 from src.message.service import MessageService
 
 router = APIRouter(
-    prefix="/message",
+    prefix="/api/v1/message",
     tags=["message"]
 )
 

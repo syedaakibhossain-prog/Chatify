@@ -19,10 +19,12 @@ async def websocket_auth(
             access_token
         )
     except HTTPException:
+        await ws.accept()
         await ws.close(status.WS_1008_POLICY_VIOLATION)
         return None
 
     if user is None :
+        await ws.accept()
         await ws.close(status.WS_1008_POLICY_VIOLATION)
         return None
 

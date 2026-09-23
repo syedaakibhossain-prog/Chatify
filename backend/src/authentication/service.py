@@ -34,7 +34,7 @@ class AuthService:
         self,
         user_request: UserRequest,
         db: AsyncSession,
-    ) -> UserResponse:
+    ) -> tuple[UserResponse , str , str]:
 
         existing_username = (
             await self.user_repo.get_user_by_name(
@@ -80,11 +80,21 @@ class AuthService:
                 user,
             )
         )
+        access_token = create_access_token(
+            created_user.id
+        )
+        refresh_token = create_refresh_token(
+            created_user.id
+        )
 
-        return UserResponse(
-            user_id=created_user.id,
-            username=created_user.username,
-            email=created_user.email,
+        return (
+            UserResponse(
+                user_id=created_user.id,
+                username=created_user.username,
+                email=created_user.email,
+            ),
+            access_token,
+            refresh_token
         )
 
     async def login_user(
