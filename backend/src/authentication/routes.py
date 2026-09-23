@@ -22,7 +22,7 @@ from src.database import get_db
 from src.dependences import get_user
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/api/v1/auth",
     tags=["Authentication"],
 )
 
@@ -80,9 +80,14 @@ async def register(
     ),
 ):
 
-    user = await auth_service.register_user(
+    user , access_token , refresh_token = await auth_service.register_user(
         user_request,
         db,
+    )
+    set_auth_cookies(
+        response,
+        access_token,
+        refresh_token,
     )
 
     return user
@@ -117,9 +122,7 @@ async def login(
         refresh_token,
     )
 
-    print("ACCESS TOKEN:", access_token)
-    print("REFRESH TOKEN:", refresh_token)
-    print("RESPONSE HEADERS:", response.headers)
+
 
     return UserResponse(
         user_id=user.id,

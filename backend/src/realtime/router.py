@@ -51,7 +51,7 @@ MessageServiceDep : TypeAlias = Annotated[MessageService , Depends(_get_message_
 # ---- WS endpoint ----
 
 router = APIRouter(
-    prefix="/realtime",
+    prefix="/v1/realtime",
     tags=["Realtime"]
 )
 
