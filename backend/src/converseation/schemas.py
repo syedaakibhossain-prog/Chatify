@@ -8,3 +8,5 @@ class ConversationId(BaseModel):
 
 class Conversations(BaseModel):
     converseton_ids : list[ConversationId]
+class ConversationResponse(ConversationId):
+    other_username: str

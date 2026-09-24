@@ -11,6 +11,8 @@ from src.model import Conversation
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
 
+from src.converseation.schemas import ConversationResponse
+
 router = APIRouter(
     prefix="/api/v1/conversation",
     tags=["conversation"]
@@ -43,9 +45,9 @@ conversation = Annotated[ConversationService , Depends(get_conversation_service)
 async def create_conversation(
     db:Dbsession,
     user_id:uuid.UUID,
-    access_token:AccessToken,
-    service:conversation
-) -> Conversation | None:
+    service:conversation,
+    access_token:AccessToken = None,
+) -> ConversationResponse | None:
 
     if access_token is None:
         raise HTTPException(
@@ -73,9 +75,9 @@ async def create_conversation(
 @router.get("/" , response_model=None)
 async def list_my_conversession(
     db:Dbsession,
-    access_token:AccessToken,
-    service:conversation
-) -> list[Conversation] | None:
+    service:conversation,
+    access_token:AccessToken = None,
+) -> list[ConversationResponse]:
     if access_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -90,8 +92,8 @@ async def list_my_conversession(
 async def get_conversation(
     db:Dbsession,
     conversation_id:uuid.UUID,
-    access_token:AccessToken,
-    service:conversation
+    service:conversation,
+    access_token:AccessToken = None,
 ) -> Conversation | None:
 
     if access_token is None:

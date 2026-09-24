@@ -8,7 +8,18 @@ from src.dependences import resolve_user_from_token
 from src.model import Conversation
 from src.user.service import UserService
 
+from src.converseation.schemas import ConversationResponse
+
 AccessToken : TypeAlias = Annotated[str | None , Cookie()]
+
+def _pair_key(
+    a: uuid.UUID,
+    b: uuid.UUID
+) -> str:
+
+    x,y = sorted([str(a) , str(b)])
+
+    return f"{x}:{y}"
 
 class ConversationService:
     def __init__(
@@ -30,7 +41,13 @@ class ConversationService:
         db:AsyncSession,
         user_id:uuid.UUID,
         sender_id : uuid.UUID
-    ) -> Conversation | None:
+    ) -> ConversationResponse | None:
+        print(f"[DEBUG] create_conversation: user_id={user_id!r}  sender_id={sender_id!r}  match={user_id == sender_id}")
+        if user_id == sender_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot create a conversation with yourself",
+            )
 
         user1 = await self.user_service.fun_search_user_by_id(
             db,
@@ -44,16 +61,35 @@ class ConversationService:
             )
 
 
+        pair_key = _pair_key(
+            user1.id,
+            sender_id
+        )
+        existing_conversation = await self.repo._get_conv_by_pair_key(
+            db,
+            pair_key
+        )
 
+        if existing_conversation :
+            return ConversationResponse(
+                id=existing_conversation.id,
+                other_username=user1.username
+            )
 
         user_ids = [user1.id , sender_id]
 
-        res = await self.repo.create_conversation_with_member(
+        conversation = await self.repo.create_conversation_with_member(
             db,
+            pair_key,
             user_ids
         )
 
-        return res
+
+
+        return ConversationResponse(
+            id=conversation.id,
+            other_username=user1.username
+        )
 
     # @dec: get conversation useing conversation id
     # @parameter:db
@@ -96,18 +132,18 @@ class ConversationService:
         self,
         db:AsyncSession,
         access_token:str
-    ) -> list[uuid.UUID] | None:
+    ) -> list[ConversationResponse]:
 
         is_user = await resolve_user_from_token(
             db,
             access_token
         )
 
-        res = await self.repo.get_conversation_list(
-            db,
-            is_user.id
-        )
-        return res
+        rows = await self.repo.get_conversation_list_with_partners(db, is_user.id)
+        return [
+            ConversationResponse(id=conv_id, other_username=username)
+            for conv_id, username in rows
+        ]
     async def is_member(
         self,
         db:AsyncSession,
@@ -121,16 +157,7 @@ class ConversationService:
             user_id
         )
 
-    async def get_conversation_ids_for_user(
-        self,
-        db:AsyncSession,
-        user_id:uuid.UUID
-    ) -> list[uuid.UUID]:
 
-        return await self.repo.get_conversation_list(
-            db,
-            user_id
-        )
 
     async def mark_conversation_read(
         self,
@@ -141,5 +168,15 @@ class ConversationService:
         await self.repo.mark_conversation_read(
             db,
             conversation_id,
+            user_id
+        )
+    async def get_conversation_ids_for_user(
+        self,
+        db:AsyncSession,
+        user_id:uuid.UUID
+    ) ->list[uuid.UUID]:
+
+        return await self.repo._get_conversation_ids(
+            db,
             user_id
         )

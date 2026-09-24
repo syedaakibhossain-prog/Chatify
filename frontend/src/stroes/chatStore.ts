@@ -126,24 +126,9 @@ export const ChatStore = create<ChatState>((set, get) => {
     // ── loadConversations ──────────────────────────────────────────
     loadConversations: async () => {
       try {
-        // Step 1: get list of conversation IDs
-        const ids = await conversationApi.list();
-        if (!Array.isArray(ids) || ids.length === 0) {
-          set({ conversations: [], conversationsLoaded: true });
-          return;
-        }
-
-        // Step 2: fetch each conversation detail
-        const settled = await Promise.allSettled(
-          ids.map((id) => conversationApi.get(id))
-        );
-
-        const convs: Conversation[] = [];
-        settled.forEach((r) => {
-          if (r.status === "fulfilled" && r.value) convs.push(r.value);
-        });
-
-        set({ conversations: convs, conversationsLoaded: true });
+        // Single API call: backend returns ConversationResponse[]
+        const convs = await conversationApi.list();
+        set({ conversations: Array.isArray(convs) ? convs : [], conversationsLoaded: true });
       } catch {
         set({ conversationsLoaded: true });
       }

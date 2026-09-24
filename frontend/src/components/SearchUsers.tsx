@@ -52,20 +52,20 @@ export default function SearchUsers() {
   async function startChat(userId: string) {
     try {
       const raw = await conversationApi.create(userId);
-      // raw is ConversationOut — adapt to Conversation shape for the store
+      // raw is ConversationResponse { id, other_username }
       const conv: Conversation = {
         id: raw.id,
-        created_at: raw.created_at,
-        members: raw.members ?? [],
+        other_username: raw.other_username,
       };
       addConversation(conv);
       await setActive(conv.id);
     } catch {
-      // conversation likely already exists; just search for it in the list
+      // conversation likely already exists; it will appear in the list
     }
     setQuery("");
     setOpen(false);
   }
+
 
   return (
     <div className="search-users" ref={containerRef}>
