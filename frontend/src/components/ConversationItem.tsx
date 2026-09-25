@@ -1,5 +1,4 @@
 import { ChatStore } from "../stroes/chatStore";
-import { AuthStore } from "../stroes/authStroes";
 import type { Conversation } from "../types";
 
 interface Props {
@@ -13,11 +12,9 @@ function getInitials(name: string): string {
 
 export default function ConversationItem({ conversation, isActive }: Props) {
   const setActive = ChatStore((s) => s.setActiveConversation);
-  const me = AuthStore((s) => s.user);
 
-  // Pick the other member as the display name
-  const other = (conversation.members ?? []).find((m) => m.id !== me?.user_id);
-  const displayName = other?.username ?? "Unknown";
+  // Backend returns other_username directly — no members[] lookup needed
+  const displayName = conversation.other_username ?? "Unknown";
 
   return (
     <div

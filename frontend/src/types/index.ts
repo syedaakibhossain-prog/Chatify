@@ -12,11 +12,10 @@ export interface PublicUser{
   email: string;
 }
 
-//response - Conversation
+//response - Conversation (matches backend ConversationResponse)
 export interface Conversation{
   id: string;
-  created_at: string;
-  members: Pick<PublicUser, "id" | "username">[];
+  other_username: string;
 }
 
 //response - single message

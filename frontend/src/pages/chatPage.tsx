@@ -23,8 +23,7 @@ export default function ChatPage() {
 
   // Find the active conversation to show the header name
   const activeConversation = conversations.find((c) => c.id === activeId);
-  const other = activeConversation?.members?.find((m) => m.id !== user?.user_id);
-  const chatPartnerName = other?.username ?? "Chat";
+  const chatPartnerName = activeConversation?.other_username ?? "Chat";
 
   function getInitials(name: string) {
     return name.slice(0, 2).toUpperCase();

@@ -50,7 +50,11 @@ class Conversation(BaseModel):
         nullable=False,
         index=True,   # for chat-list sorting
     )
-
+    pair_key:Mapped[str] = mapped_column(
+        String ,
+        nullable=False,
+        index=True
+    )
     members: Mapped[list["Member"]] = relationship(
         "Member", back_populates="conversation", cascade="all, delete-orphan"
     )

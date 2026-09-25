@@ -4,11 +4,10 @@ Unit tests for backend/src/realtime/ — Manager + Handler.
 Run with:
     cd test && python -m pytest test_realtime.py -v
 """
-import asyncio
 import uuid
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -54,7 +53,9 @@ def _fake_ws() -> AsyncMock:
 # Import here so the module-level `manager` singleton doesn't interfere.
 # We instantiate fresh Manager objects in each test.
 
-import sys, os
+import os
+import sys
+
 # Add backend/ so `src.*` imports inside the source files resolve.
 # Add backend/src/ so we can import `realtime.manager`, `realtime.handler` directly.
 _test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -66,13 +67,15 @@ for _p in (_backend_dir, _src_dir):
         sys.path.insert(0, _p)
 
 # Manager only depends on fastapi + asyncio — import directly.
-from realtime.manager import Manager
+from types import ModuleType as _ModuleType
 
 # Handler imports pull in the entire app (database.py creates an engine at module
 # level that requires aiosqlite).  We stub the heavy leaf modules so the handler
 # module can be imported without any DB driver.
 from unittest.mock import MagicMock as _MagicMock
-from types import ModuleType as _ModuleType
+
+from realtime.manager import Manager
+
 
 def _stub_module(name: str, package: bool = False) -> _ModuleType:
     """Create and register a stub module in sys.modules if not already present."""
@@ -136,7 +139,7 @@ _rt_pkg.manager = _real_manager_mod
 _rt_pkg.schemas = _real_schemas_mod
 
 # Now we can safely import the handler module
-from realtime.handler import RealTimeHandler  # noqa: E402
+from realtime.handler import RealTimeHandler
 
 
 class TestManagerConnectDisconnect:
