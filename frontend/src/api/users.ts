@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { PublicUser } from "../types";
+
 
 export interface UserSearchResult {
   id: string;

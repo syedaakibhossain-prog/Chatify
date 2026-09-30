@@ -16,6 +16,7 @@ DATABASE_URL = settings.DATABASE_URL
 
 engine = create_async_engine(
     DATABASE_URL,
+    connect_args={"ssl": "require"},
     echo=True,
 )
 
