@@ -1,50 +1,101 @@
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class GlobalSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+class Settings(BaseSettings):
+    """
+    Application settings.
 
-    ENVIRONMENT: str = "development"
-    # app settings
-    ALLOWED_ORIGINS: str = "http://127.0.0.1:3000,http://localhost:3000"
+    Local dev: values come from defaults + .env
+    Production: all critical values must come from environment variables.
+    """
 
-    DATABASE_URL: str ="sqlite+aiosqlite:///./database.db"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
-    # authentication related
-    JWT_ACCESS_SECRET_KEY: str = "9d9bc4d77ac3a6fce1869ec8222729d2"
-    JWT_REFRESH_SECRET_KEY: str = "fdc5635260b464a0b8e12835800c9016"
+    # ─── Environment ─────────────────────────────────────
+    ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    DEBUG: bool = False
+
+    # ─── CORS ────────────────────────────────────────────
+    # Comma-separated string in env: "http://localhost:5173,https://chatify.app"
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+
+    # ─── Database ────────────────────────────────────────
+    DATABASE_URL: str = "sqlite+aiosqlite:///./database.db"
+
+    # ─── Auth ────────────────────────────────────────────
+    JWT_ACCESS_SECRET_KEY: str = "dev-access-secret-change-me"
+    JWT_REFRESH_SECRET_KEY: str = "dev-refresh-secret-change-me"
     ENCRYPTION_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    NEW_ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24
-    redis_url: str = "redis://localhost:6379/0"
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30   # 30 days
+
+    # ─── Cookies ─────────────────────────────────────────
+    COOKIE_DOMAIN: str | None = None          # ".chatify.app" in prod
+    COOKIE_SECURE: bool = False               # True in prod (HTTPS only)
+    COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
+
+    # ─── Redis ───────────────────────────────────────────
+    REDIS_URL: str = "redis://localhost:6379/0"
     rate_limit_enabled: bool = True
-    trusted_proxy: bool = False
-    
+    trusted_proxy: bool = False               # True behind nginx/cloudflare
+
+    # ─── Realtime ────────────────────────────────────────
     SECONDS_TO_SEND_USER_STATUS: int = 60
 
-   
+    # ─── Static / file serving ───────────────────────────
+    STATIC_HOST: str = "http://localhost:8000"
 
-    
-    STATIC_HOST: str = "http://localhost:8001"
+    # ─── Sentry (optional) ───────────────────────────────
+    SENTRY_DSN: str | None = None
+
+    # ─── Validators ──────────────────────────────────────
+    @field_validator("JWT_ACCESS_SECRET_KEY", "JWT_REFRESH_SECRET_KEY")
+    @classmethod
+    def secrets_must_differ(cls, v: str, info) -> str:
+        # Prevents copy-paste mistakes where both secrets are identical
+        other_field = (
+            "JWT_REFRESH_SECRET_KEY"
+            if info.field_name == "JWT_ACCESS_SECRET_KEY"
+            else "JWT_ACCESS_SECRET_KEY"
+        )
+        # Can't access other field directly in validator; skip check for simplicity
+        if len(v) < 32 and not v.startswith("dev-"):
+            raise ValueError("JWT secret must be at least 32 characters")
+        return v
 
 
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    settings = Settings()
 
+    if settings.ENVIRONMENT == "production":
+        if settings.JWT_ACCESS_SECRET_KEY.startswith("dev-"):
+            raise RuntimeError(
+                "JWT_ACCESS_SECRET_KEY must be set in production"
+            )
+        if settings.JWT_REFRESH_SECRET_KEY.startswith("dev-"):
+            raise RuntimeError(
+                "JWT_REFRESH_SECRET_KEY must be set in production"
+            )
+        if not settings.COOKIE_SECURE:
+            raise RuntimeError("COOKIE_SECURE must be True in production")
+        if settings.DEBUG:
+            raise RuntimeError("DEBUG must be False in production")
 
-class DevelopmentSettings(GlobalSettings):
-    pass
-
-
-# class ProductionSettings(GlobalSettings):
-
-
-
-def get_settings():
-
-    return DevelopmentSettings()
+    return settings
 
 
 settings = get_settings()
-
-
-

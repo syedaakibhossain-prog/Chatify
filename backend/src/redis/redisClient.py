@@ -9,7 +9,7 @@ class RedisClient:
     def get(cls) -> redis.Redis:
         if cls._client is None:
             cls._client = redis.from_url(
-                settings.redis_url,
+                settings.REDIS_URL,
                 encoding="utf-8",
                 decode_responses=True,
                 socket_timeout=2,
