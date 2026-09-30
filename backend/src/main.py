@@ -10,6 +10,7 @@ from src.message.router import router as message_router
 from src.realtime.router import router as realtime_router
 from src.redis.redisClient import RedisClient
 from src.user.router import router as user_router
+from src.config import settings
 
 logger = logging.getLogger("chatify")
 
@@ -41,14 +42,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-        "http://localhost:8081",
-        "http://localhost:19006",
-        "http://10.0.2.2:8081",
-        "http://10.0.2.2:19006",
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_origin_regex=r"(http|https)://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?|exp://.*",
     allow_credentials=True,
     allow_methods=["*"],
