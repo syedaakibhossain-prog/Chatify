@@ -27,7 +27,7 @@ interface ChatState {
   initSocket: () => void;
   teardown: () => void;
   loadConversations: () => Promise<void>;
-  setActiveConversation: (id: string) => Promise<void>;
+  setActiveConversation: (id: string | null) => Promise<void>;
   loadMessages: (conversationId: string) => Promise<void>;
   sendMessage: (conversationId: string, content: string) => void;
   addConversation: (conv: Conversation) => void;
@@ -146,8 +146,9 @@ export const ChatStore = create<ChatState>((set, get) => {
     },
 
     // ── setActiveConversation ──────────────────────────────────────
-    setActiveConversation: async (id: string) => {
+    setActiveConversation: async (id: string | null) => {
       set({ activeConversationId: id });
+      if (!id) return;
       chatSocket.sendMessageRead(id);
 
       // Load messages if not already cached

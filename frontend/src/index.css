@@ -827,3 +827,125 @@ html, body, #root {
   to { transform: rotate(360deg); }
 }
 
+/* ═══════════════════════════════════════════
+   MOBILE BACK BUTTON
+   Hidden on desktop, shown on mobile
+═══════════════════════════════════════════ */
+.btn-back-mobile {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-back-mobile:hover {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — TABLET & MOBILE (≤ 768 px)
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Layout: stack panels instead of side-by-side ── */
+  .chat-layout {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Sidebar becomes full-width overlay */
+  .sidebar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-width: 0;
+    z-index: 10;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+  .sidebar.mobile-visible {
+    transform: translateX(0);
+  }
+  .sidebar.mobile-hidden {
+    transform: translateX(-100%);
+  }
+
+  /* Chat main fills the full screen */
+  .chat-main {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+  }
+  .chat-main.mobile-visible {
+    transform: translateX(0);
+  }
+  .chat-main.mobile-hidden {
+    transform: translateX(100%);
+  }
+
+  /* Show the back arrow button */
+  .btn-back-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Bubbles can be wider on small screens */
+  .bubble {
+    max-width: 82%;
+  }
+
+  /* Message list padding tightened */
+  .message-list {
+    padding: 16px 12px 8px;
+  }
+
+  /* Message input area tighter */
+  .message-input-area {
+    padding: 10px 12px 12px;
+  }
+
+  /* Chat header padding */
+  .chat-header {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  /* Auth card — edge-to-edge on very small screens */
+  .auth-bg {
+    align-items: flex-start;
+    padding: 20px 16px;
+  }
+  .auth-card {
+    max-width: 100%;
+    padding: 28px 20px;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Sidebar username max-width looser */
+  .sidebar-username {
+    max-width: 120px;
+  }
+}
+
+/* ── Extra small phones (≤ 400 px) ── */
+@media (max-width: 400px) {
+  .bubble {
+    max-width: 90%;
+  }
+  .auth-card {
+    padding: 24px 16px;
+  }
+  .sidebar-header {
+    padding: 14px 12px 12px;
+  }
+}
