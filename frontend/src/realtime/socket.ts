@@ -21,8 +21,8 @@ class ChatSocket {
 
     this.shouldReconnect = true;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${window.location.host}/v1/realtime/ws`;
+
+    const url = "wss://chatify-xkst.onrender.com/v1/realtime/ws";
 
     this.ws = new WebSocket(url);
 
