@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AuthStore } from "../stroes/authStroes";
 import { ChatStore } from "../stroes/chatStore";
 import ConversationList from "../components/ConversationList";
@@ -14,12 +14,21 @@ export default function ChatPage() {
   const teardown = ChatStore((s) => s.teardown);
   const conversations = ChatStore((s) => s.conversations);
   const activeId = ChatStore((s) => s.activeConversationId);
+  const setActiveConversation = ChatStore((s) => s.setActiveConversation);
+
+  // Mobile: true = show sidebar, false = show chat panel
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
 
   // Connect WS when chat page mounts, disconnect on unmount
   useEffect(() => {
     initSocket();
     return () => teardown();
   }, [initSocket, teardown]);
+
+  // When a conversation becomes active on mobile, switch to chat view
+  useEffect(() => {
+    if (activeId) setMobileSidebarOpen(false);
+  }, [activeId]);
 
   // Find the active conversation to show the header name
   const activeConversation = conversations.find((c) => c.id === activeId);
@@ -29,10 +38,15 @@ export default function ChatPage() {
     return name.slice(0, 2).toUpperCase();
   }
 
+  function handleBackToSidebar() {
+    setMobileSidebarOpen(true);
+    setActiveConversation(null);
+  }
+
   return (
     <div className="chat-layout">
       {/* ── Sidebar ── */}
-      <aside className="sidebar">
+      <aside className={`sidebar${mobileSidebarOpen ? " mobile-visible" : " mobile-hidden"}`}>
         {/* Logo + User */}
         <header className="sidebar-header">
           <span className="sidebar-logo">Chatify</span>
@@ -60,11 +74,20 @@ export default function ChatPage() {
       </aside>
 
       {/* ── Chat Main ── */}
-      <main className="chat-main">
+      <main className={`chat-main${!mobileSidebarOpen ? " mobile-visible" : " mobile-hidden"}`}>
         {activeId ? (
           <>
             {/* Chat header */}
             <div className="chat-header">
+              {/* Back button — only visible on mobile */}
+              <button
+                id="back-to-sidebar-btn"
+                className="btn-back-mobile"
+                onClick={handleBackToSidebar}
+                aria-label="Back to conversations"
+              >
+                ←
+              </button>
               <div className="chat-header-avatar">
                 {getInitials(chatPartnerName)}
               </div>
