@@ -42,10 +42,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30   # 30 days
 
-    # ─── Cookies ─────────────────────────────────────────
-    COOKIE_DOMAIN: str | None = None          # ".chatify.app" in prod
-    COOKIE_SECURE: bool = False               # True in prod (HTTPS only)
-    COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
+
 
     # ─── Redis ───────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -54,12 +51,6 @@ class Settings(BaseSettings):
 
     # ─── Realtime ────────────────────────────────────────
     SECONDS_TO_SEND_USER_STATUS: int = 60
-
-    # ─── Static / file serving ───────────────────────────
-    STATIC_HOST: str = "http://localhost:8000"
-
-    # ─── Sentry (optional) ───────────────────────────────
-    SENTRY_DSN: str | None = None
 
     # ─── Validators ──────────────────────────────────────
     @field_validator("JWT_ACCESS_SECRET_KEY", "JWT_REFRESH_SECRET_KEY")
@@ -90,8 +81,6 @@ def get_settings() -> Settings:
             raise RuntimeError(
                 "JWT_REFRESH_SECRET_KEY must be set in production"
             )
-        if not settings.COOKIE_SECURE:
-            raise RuntimeError("COOKIE_SECURE must be True in production")
         if settings.DEBUG:
             raise RuntimeError("DEBUG must be False in production")
 
