@@ -36,3 +36,5 @@ class UserResponse(BaseModel):
     user_id: UUID4
     username: str
     email: EmailStr
+    acces_token: str | None = None
+    refresh_token: str | None = None

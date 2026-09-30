@@ -18,7 +18,7 @@ DbSession: TypeAlias = Annotated[AsyncSession, Depends(get_db)]
 AccessToken: TypeAlias = Annotated[str | None, Cookie()]
 
 
-# ---- Service factories ----
+
 
 def get_user_service() -> UserService:
     return UserService(UserRepo())
@@ -48,7 +48,7 @@ MessageServiceDep : TypeAlias = Annotated[MessageService , Depends(_get_message_
 
 
 
-# ---- WS endpoint ----
+
 
 router = APIRouter(
     prefix="/v1/realtime",

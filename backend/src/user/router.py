@@ -4,6 +4,8 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_db
 from src.dependences import resolve_user_from_token
+from src.redis.ratelimiter import rate_limit
+from src.redis.ratelimits import USER_SEARCH
 from src.user.reposetory import UserRepo
 from src.user.schemas import UserSearchResults
 from src.user.service import UserService
@@ -24,7 +26,8 @@ user_service = Annotated[UserService , Depends(get_user_service)]
 
 @router.get(
     "/search",
-    response_model=UserSearchResults
+    response_model=UserSearchResults,
+    dependencies=[Depends(rate_limit("user:search", USER_SEARCH))],
 )
 async def search_user(
     db:DBsession,
@@ -53,7 +56,7 @@ async def search_user(
                     detail="USER NOT FOUND"
                 )
         except HTTPException as e:
-            if e.status_code != status.HTTP_404_NOT_FOUND:
+            if e.status_code == status.HTTP_404_NOT_FOUND:
                 raise
 
     return UserSearchResults(

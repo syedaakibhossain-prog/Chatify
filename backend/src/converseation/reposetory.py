@@ -125,7 +125,7 @@ class ConversetionRepo:
         me = aliased(Member)
         others = aliased(Member)
 
-        stmt = (
+        query = (
             select(Conversation.id, User.username)
             .join(me, me.conversation_id == Conversation.id)
             .join(others, others.conversation_id == Conversation.id)
@@ -135,7 +135,7 @@ class ConversetionRepo:
             .order_by(Conversation.updated_at.desc())
         )
 
-        result = await db.execute(stmt)
+        result = await db.execute(query)
         return result.all()
 
     async def _get_conversation_ids(

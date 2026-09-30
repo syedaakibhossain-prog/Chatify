@@ -1,11 +1,9 @@
 import uuid
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.model import User
 from src.user.schemas import UserResults, UserSearchResults
-from starlette import status
 
 
 class UserRepo:
@@ -23,10 +21,7 @@ class UserRepo:
         )
         res = query.scalar_one_or_none()
         if res is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="USER NOT FOUND"
-            )
+            return None
 
         return UserSearchResults(
             id=res.id,
@@ -47,10 +42,8 @@ class UserRepo:
 
         res = query.scalar_one_or_none()
         if res is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="USER NOT FOUND"
-            )
+            return None
+
         return UserResults(
             id=res.id,
             username=res.username

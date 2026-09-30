@@ -4,11 +4,10 @@ from typing import Annotated, TypeAlias
 from fastapi import Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.converseation.reposetory import ConversetionRepo
+from src.converseation.schemas import ConversationResponse
 from src.dependences import resolve_user_from_token
 from src.model import Conversation
 from src.user.service import UserService
-
-from src.converseation.schemas import ConversationResponse
 
 AccessToken : TypeAlias = Annotated[str | None , Cookie()]
 
@@ -33,9 +32,9 @@ class ConversationService:
     # @dec: create conversation using member
     # it was also verify user from access token , and user_id
     # @parameter:db
-    # @parameter:user_id
-    # @parameter:access_token
-    # @return:Conversation
+    # @parameter:user_id(with whome sender_id trying to create the conversation)
+    # @parameter:sender_id(the one creating the conversation)
+    # @return:ConversationResponse
     async def create_conversation_with_member(
         self,
         db:AsyncSession,
@@ -134,6 +133,7 @@ class ConversationService:
         access_token:str
     ) -> list[ConversationResponse]:
 
+
         is_user = await resolve_user_from_token(
             db,
             access_token
@@ -144,6 +144,12 @@ class ConversationService:
             ConversationResponse(id=conv_id, other_username=username)
             for conv_id, username in rows
         ]
+
+    # @dec: check if the user is member of the conversation
+    # @parameter:db
+    # @parameter:conversation_id:uuid
+    # @parameter:user_id:uuid
+    # @return:bool
     async def is_member(
         self,
         db:AsyncSession,

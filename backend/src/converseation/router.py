@@ -4,14 +4,17 @@ from typing import Annotated, TypeAlias
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.converseation.reposetory import ConversetionRepo
+from src.converseation.schemas import ConversationResponse
 from src.converseation.service import ConversationService
 from src.database import get_db
 from src.dependences import resolve_user_from_token
 from src.model import Conversation
+from src.realtime.manager import manager
+from src.realtime.schemas import outbound
+from src.redis.ratelimiter import rate_limit
+from src.redis.ratelimits import CONVERSATION_CREATE, CONVERSATION_LIST
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
-
-from src.converseation.schemas import ConversationResponse
 
 router = APIRouter(
     prefix="/api/v1/conversation",
@@ -41,7 +44,7 @@ def get_conversation_service(service:user_service) -> ConversationService:
 
 conversation = Annotated[ConversationService , Depends(get_conversation_service)]
 
-@router.post("/" , response_model=None)
+@router.post("/" , response_model=ConversationResponse, dependencies=[Depends(rate_limit("conversation:create", CONVERSATION_CREATE))])
 async def create_conversation(
     db:Dbsession,
     user_id:uuid.UUID,
@@ -70,9 +73,24 @@ async def create_conversation(
         sender.id
     )
 
+    if response:
+        # Tell the other user (Bob) about the new conversation in real-time
+        # so their sidebar updates without a refresh.
+        await manager.join_conversation(user_id, [response.id])
+        await manager.send_to_user(
+            user_id,
+            outbound(
+                "conversation:new",
+                id=str(response.id),
+                other_username=sender.username,  # from Bob's perspective Alice started it
+            )
+        )
+        # Also make sure the creator (Alice) is in the room
+        await manager.join_conversation(sender.id, [response.id])
+
     return response
 
-@router.get("/" , response_model=None)
+@router.get("/" , response_model=list[ConversationResponse], dependencies=[Depends(rate_limit("conversation:list", CONVERSATION_LIST))])
 async def list_my_conversession(
     db:Dbsession,
     service:conversation,
@@ -88,7 +106,7 @@ async def list_my_conversession(
         access_token
     )
 
-@router.get("/{conversation_id}" , response_model= None)
+@router.get("/{conversation_id}" , response_model= None, dependencies=[Depends(rate_limit("conversation:get", CONVERSATION_LIST))])
 async def get_conversation(
     db:Dbsession,
     conversation_id:uuid.UUID,

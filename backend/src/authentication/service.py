@@ -1,3 +1,4 @@
+import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.authentication.reposetory import (
@@ -175,9 +176,17 @@ class AuthService:
                 detail="Invalid refresh token",
             )
 
+        try:
+            user_uuid = uuid.UUID(user_id)
+        except (ValueError, AttributeError):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token payload",
+            )
+
         user = await self.user_repo.get_user_by_id(
             db,
-            user_id,
+            user_uuid,
         )
 
         if not user:

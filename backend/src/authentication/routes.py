@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import (
     APIRouter,
     Cookie,
@@ -20,6 +22,8 @@ from src.authentication.service import (
 )
 from src.database import get_db
 from src.dependences import get_user
+from src.redis.ratelimiter import rate_limit
+from src.redis.ratelimits import AUTH_LOGIN, AUTH_REFRESH, AUTH_REGISTER
 
 router = APIRouter(
     prefix="/api/v1/auth",
@@ -70,14 +74,13 @@ def set_auth_cookies(
     "/register",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit("auth:register", AUTH_REGISTER))],
 )
 async def register(
     user_request: UserRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db),
-    auth_service: AuthService = Depends(
-        get_auth_service
-    ),
+    db:Annotated[AsyncSession , Depends(get_db)],
+    auth_service: Annotated[AuthService , Depends(get_auth_service)],
 ):
 
     user , access_token , refresh_token = await auth_service.register_user(
@@ -90,7 +93,13 @@ async def register(
         refresh_token,
     )
 
-    return user
+    return UserResponse(
+        user_id=user.user_id,
+        username=user.username,
+        email=user.email,
+        acces_token=access_token,
+        refresh_token=refresh_token,
+    )
 
 
 
@@ -99,14 +108,13 @@ async def register(
     "/login",
     response_model=UserResponse,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(rate_limit("auth:login", AUTH_LOGIN))],
 )
 async def login(
     login_request: LoginRequest,
     response: Response,
-    db: AsyncSession = Depends(get_db),
-    auth_service: AuthService = Depends(
-        get_auth_service
-    ),
+    db:Annotated[AsyncSession , Depends(get_db)],
+    auth_service: Annotated[AuthService , Depends(get_auth_service)],
 ):
 
     user, access_token, refresh_token = (
@@ -128,6 +136,8 @@ async def login(
         user_id=user.id,
         username=user.username,
         email=user.email,
+        acces_token=access_token,
+        refresh_token=refresh_token
     )
 
 
@@ -137,6 +147,7 @@ async def login(
     "/refresh",
     response_model=UserResponse,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(rate_limit("auth:refresh", AUTH_REFRESH))],
 )
 async def refresh(
     response: Response,
@@ -176,6 +187,8 @@ async def refresh(
         user_id=user.id,
         username=user.username,
         email=user.email,
+        acces_token=access_token,
+        refresh_token=refresh_token
     )
 
 
@@ -210,8 +223,8 @@ async def get_current_user(
     current_user=Depends(get_user),
 ):
 
-    return UserResponse(
-        user_id=current_user.id,
-        username=current_user.username,
-        email=current_user.email,
-    )
+    return {
+        "user_id" : current_user.id,
+        "username" : current_user.username,
+        "email" : current_user.email
+    }

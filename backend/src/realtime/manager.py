@@ -56,6 +56,8 @@ class Manager :
 
 
     # rooms
+    # @paramter:user_id - uuid
+    # @parameter:conversation_id - uuid
     async def join_conversation(
         self,
         user_id : uuid.UUID,

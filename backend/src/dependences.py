@@ -1,12 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import (
-    Cookie,
-    Depends,
-    HTTPException,
-    status,
-)
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.authentication.reposetory import (
     UserRepository,
@@ -23,16 +18,19 @@ Dbsession = Annotated[AsyncSession , Depends(get_db)]
 
 
 async def get_user(
+    request:Request,
     db:Dbsession,
     access_token: str | None = Cookie(
         default=None
     )
 ) -> User | None:
 
-    return await resolve_user_from_token(
+    user = await resolve_user_from_token(
         db,
         access_token
     )
+    request.state.user = user
+    return user
 
 
 async def resolve_user_from_token(
@@ -43,7 +41,7 @@ async def resolve_user_from_token(
     if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="ACCESS TOKEN DOES NOT PROVIEDED"
+            detail="ACCESS TOKEN DOES NOT PROVIDED"
         )
 
     payload = verify_access_token(
