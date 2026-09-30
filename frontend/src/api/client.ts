@@ -15,11 +15,20 @@ export class ApiError extends Error{
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+
+/**
+ * Join base URL + path into a well-formed URL.
+ * Guarantees a single slash between the two parts.
+ */
+function buildUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${normalizedPath}`;
+}
 
 async function request<T>(path: string, opts: RequestOption = {}): Promise<T> {
 
-  const url = `${API_BASE}${path}`;
+  const url = buildUrl(path);
   const res = await fetch(url, {
     method: opts.method ?? "GET",
     headers: opts.body ? { "Content-Type": "application/json" } : undefined,
