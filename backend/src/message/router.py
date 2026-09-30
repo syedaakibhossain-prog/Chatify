@@ -7,6 +7,8 @@ from src.database import get_db
 from src.message.reposetory import MessageRepo
 from src.message.schemas import Messages
 from src.message.service import MessageService
+from src.redis.ratelimiter import rate_limit
+from src.redis.ratelimits import MESSAGE_HISTORY
 
 router = APIRouter(
     prefix="/api/v1/message",
@@ -55,10 +57,11 @@ message_service = Annotated[MessageService , Depends(get_message_service)]
 
 #     return res
 
-#get all message from a perticular convversation
+#get all message from a particular conversation
 @router.get(
     "/conversations/{conversation_id}/messages",
-    response_model=Messages
+    response_model=Messages,
+    dependencies=[Depends(rate_limit("message:history", MESSAGE_HISTORY))],
 )
 async def get_all_message(
     db : DbSession,

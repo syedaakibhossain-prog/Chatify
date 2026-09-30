@@ -26,13 +26,14 @@ class RealTimeHandler :
         self.message_service = message_service
         self.db = db
 
+    #@parameter: data - dict[str , Any]
     async def despatch(
         self,
         data : dict[str , Any]
     ) -> None :
         event_type = data.get("type")
 
-        # Bug 1 fix: guard against missing "type" key
+
         if event_type is None:
             await self.ws.send_json(outbound("error", detail="Missing event type"))
             return
@@ -43,7 +44,7 @@ class RealTimeHandler :
             return
         await handler(data)
 
-    # ---- helpers ----
+
 
     async def _parse_conversation_id(
         self,

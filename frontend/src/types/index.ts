@@ -75,6 +75,11 @@ export interface WsError {
   type: "error";
   detail: string;
 }
+export interface WsConversationNew {
+  type: "conversation:new";
+  id: string;
+  other_username: string;
+}
 
 export type WsInbound =
   | WsReady
@@ -83,4 +88,5 @@ export type WsInbound =
   | WsMessageAck
   | WsTypingUpdate
   | WsReadUpdate
-  | WsError;
+  | WsError
+  | WsConversationNew;

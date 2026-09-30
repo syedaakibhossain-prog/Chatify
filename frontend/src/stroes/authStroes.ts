@@ -21,6 +21,9 @@ export const AuthStore = create<AuthState>((set) => ({
   error: null,
 
   bootstrap: async () => {
+    // Already authenticated (e.g. just registered/logged in) — nothing to do.
+    if (AuthStore.getState().status === "authentecated") return;
+
     set({ status: "loading" });
     try {
       const user = await authapi.me();

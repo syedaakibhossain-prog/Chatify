@@ -89,6 +89,17 @@ export const ChatStore = create<ChatState>((set, get) => {
         break;
       }
 
+      case "conversation:new": {
+        // Another user started a conversation with me — add it to the sidebar
+        // immediately so I don't have to refresh.
+        const { id, other_username } = msg;
+        set((s) => {
+          if (s.conversations.find((c) => c.id === id)) return s;
+          return { conversations: [{ id, other_username }, ...s.conversations] };
+        });
+        break;
+      }
+
       case "read:update":
       case "ready":
       case "pong":

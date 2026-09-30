@@ -15,28 +15,36 @@ export class ApiError extends Error{
   }
 }
 
-async function request<T>(path: string, opts: RequestOption = {}): Promise<T>{
-  const res = await fetch(
-    path,
-    {
-      method: opts.method ?? "GET",
-      headers: opts.body ? { "Content-Type": "application/json" } : undefined,
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
-      credentials: "include",
-      signal: opts.signal,
-    }
-  );
-  if (res.status == 204) return undefined as T;
+async function request<T>(path: string, opts: RequestOption = {}): Promise<T> {
+  const res = await fetch(path, {
+    method: opts.method ?? "GET",
+    headers: opts.body ? { "Content-Type": "application/json" } : undefined,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    credentials: "include",
+    signal: opts.signal,
+  });
+
+  if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+
+  // Safely parse — non-JSON bodies (HTML error pages, plain text) must not
+  // throw a raw SyntaxError; surface them as a proper ApiError instead.
+  let data: unknown = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // Body is not valid JSON (e.g. uvicorn HTML 500, reverse-proxy page).
+    throw new ApiError(res.status, `HTTP ${res.status}`);
+  }
 
   if (!res.ok) {
-    const detail = (data && (data.detail ?? data.message)) || `HTTP ${res.status}`;
+    const rec = data as Record<string, unknown> | null;
+    const detail = (rec && String(rec.detail ?? rec.message ?? "")) || `HTTP ${res.status}`;
     throw new ApiError(res.status, detail);
   }
-  return data as T;
 
+  return data as T;
 }
 
 export const api = {

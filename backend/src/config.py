@@ -30,7 +30,9 @@ class GlobalSettings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     NEW_ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24
-
+    redis_url: str = "redis://localhost:6379/0"
+    rate_limit_enabled: bool = True
+    trusted_proxy: bool = False
     # admin
     # ADMIN_SECRET_KEY: str = "Hv9LGqARc473ceBUYDw1FR0QaXOA3Ky4"
 

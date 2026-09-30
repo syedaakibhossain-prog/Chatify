@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,7 +8,10 @@ from src.converseation.router import router as conversation_router
 from src.database import BaseModel, engine
 from src.message.router import router as message_router
 from src.realtime.router import router as realtime_router
+from src.redis.redisClient import RedisClient
 from src.user.router import router as user_router
+
+logger = logging.getLogger("chatify")
 
 
 @asynccontextmanager
@@ -17,8 +21,18 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(
             BaseModel.metadata.create_all
         )
+    try:
+        await RedisClient.get().ping()
+        logger.info("startup.redis.connected")
+    except Exception as e:
+        logger.error("startup.redis.unavailable error=%s", e)
+        raise
 
     yield
+
+    await RedisClient.close()
+
+
 
 
 app = FastAPI(
@@ -30,7 +44,12 @@ app.add_middleware(
     allow_origins=[
         "http://127.0.0.1:5173",
         "http://localhost:5173",
+        "http://localhost:8081",
+        "http://localhost:19006",
+        "http://10.0.2.2:8081",
+        "http://10.0.2.2:19006",
     ],
+    allow_origin_regex=r"(http|https)://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?|exp://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
