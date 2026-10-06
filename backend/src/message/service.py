@@ -7,15 +7,18 @@ from src.dependences import resolve_user_from_token
 from src.message.reposetory import MessageRepo
 from src.message.schemas import CreateMessage, MessageOut, Messages
 from src.model import Message
+from src.converseation.service import ConversationService
 
 AccessToken : TypeAlias = Annotated [str | None , Cookie()]
 
 class MessageService:
     def __init__(
         self,
-        message_repo:MessageRepo
+        message_repo:MessageRepo,
+        conversation_service:ConversationService
     ) -> None:
         self.message_repo = message_repo
+        self.con_servoice = conversation_service
 
     #send message (auth required)
     #  @parameter : db
@@ -62,17 +65,17 @@ class MessageService:
         self,
         db : AsyncSession,
         conversation_id : uuid.UUID,
-        access_token : AccessToken
+        user_id:uuid.UUID
     ) -> Messages :
 
-        user = await resolve_user_from_token(
+        if not await self.con_servoice.is_member(
             db,
-            access_token
-        )
-        if user is None :
+            conversation_id,
+            user_id
+        ):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="YOU ARE NOT AN USER"
+                status.HTTP_404_NOT_FOUND,
+                "conversation not found"
             )
 
         res = await self.message_repo.fecth_messages(
