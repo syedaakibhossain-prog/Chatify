@@ -20,6 +20,7 @@ from src.authentication.schemas import (
 from src.authentication.service import (
     AuthService,
 )
+from src.config import settings
 from src.database import get_db
 from src.dependences import get_user
 from src.redis.ratelimiter import rate_limit
@@ -55,7 +56,7 @@ def set_auth_cookies(
         httponly=True,
         secure=True,
         samesite="none",
-        max_age=60 * 60,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES*60,
     )
 
     response.set_cookie(
@@ -64,7 +65,7 @@ def set_auth_cookies(
         httponly=True,
         secure=True,
         samesite="none",
-        max_age=60 * 60 * 24 * 30,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_MINUTES*60,
     )
 
 
@@ -180,7 +181,7 @@ async def refresh(
         httponly=True,
         secure=True,
         samesite="none",
-        max_age=60 * 60,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
     )
 
     return UserResponse(

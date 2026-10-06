@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type{ AuthUser } from "../types";
 import { authapi } from "../api/auth";
+import { setSessionExpiredHandler } from "../api/client";
 
 type AuthStatus = "idle" | "loading" | "authentecated" | "unauthenticated";
 
@@ -68,3 +69,11 @@ export const AuthStore = create<AuthState>((set) => ({
   }
 
 }));
+
+setSessionExpiredHandler(() => {
+  AuthStore.setState({
+    user: null,
+    status: "unauthenticated",
+    error: null
+  });
+});
