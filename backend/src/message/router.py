@@ -3,19 +3,18 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.model import User
+from src.converseation.reposetory import ConversetionRepo
+from src.converseation.service import ConversationService
 from src.database import get_db
+from src.dependences import get_user
 from src.message.reposetory import MessageRepo
 from src.message.schemas import Messages
 from src.message.service import MessageService
+from src.model import User
 from src.redis.ratelimiter import rate_limit
 from src.redis.ratelimits import MESSAGE_HISTORY
-from src.dependences import get_user
-from src.converseation.service import ConversationService
-from src.converseation.reposetory import ConversetionRepo
-from src.user.service import UserService
 from src.user.reposetory import UserRepo
-
+from src.user.service import UserService
 
 router = APIRouter(
     prefix="/api/v1/message",

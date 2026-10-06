@@ -3,11 +3,11 @@ from typing import Annotated, TypeAlias
 
 from fastapi import Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio.session import AsyncSession
+from src.converseation.service import ConversationService
 from src.dependences import resolve_user_from_token
 from src.message.reposetory import MessageRepo
 from src.message.schemas import CreateMessage, MessageOut, Messages
 from src.model import Message
-from src.converseation.service import ConversationService
 
 AccessToken : TypeAlias = Annotated [str | None , Cookie()]
 
