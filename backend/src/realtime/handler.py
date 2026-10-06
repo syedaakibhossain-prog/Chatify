@@ -165,12 +165,25 @@ class RealTimeHandler :
             user_id=self.user.id
         )
 
+    async def _require_member(
+        self,
+        conversation_id:uuid.UUID
+    ) -> bool:
+        ok = await self.conversation_service.is_member(
+            db=self.db,
+            conversation_id=conversation_id,
+            user_id=self.user.id
+        )
+        if not ok :
+            await self.ws.send_json(outbound("error" , detail="member not found"))
+        return ok
+
     async def on_message_read(
         self,
         data : dict[str , Any]
     ) -> None :
         conversation_id = await self._parse_conversation_id(data)
-        if conversation_id is None:
+        if conversation_id is None or not await self._require_member(conversation_id=conversation_id):
             return
 
         await self.conversation_service.mark_conversation_read(

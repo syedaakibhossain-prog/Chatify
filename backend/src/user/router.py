@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_db
-from src.dependences import resolve_user_from_token
+from src.dependences import get_user
+from src.model import User
 from src.redis.ratelimiter import rate_limit
 from src.redis.ratelimits import USER_SEARCH
 from src.user.reposetory import UserRepo
@@ -33,7 +34,7 @@ async def search_user(
     db:DBsession,
     username:str,
     user_service: user_service,
-    access_token: str | None = Cookie(default=None),
+    me:Annotated[User, Depends(get_user)]
 ) -> UserSearchResults | None:
     user = await user_service.fun_search_user(
         db,
@@ -46,18 +47,11 @@ async def search_user(
             detail="USER NOT FOUND"
         )
 
-    # Exclude the currently logged-in user from results
-    if access_token:
-        try:
-            current_user = await resolve_user_from_token(db, access_token)
-            if current_user and current_user.id == user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="USER NOT FOUND"
-                )
-        except HTTPException as e:
-            if e.status_code == status.HTTP_404_NOT_FOUND:
-                raise
+    if user.id == me.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="user not found"
+        )
 
     return UserSearchResults(
         id=user.id,
