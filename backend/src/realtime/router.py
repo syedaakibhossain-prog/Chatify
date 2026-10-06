@@ -37,11 +37,12 @@ ConversationServiceDep: TypeAlias = Annotated[
     ConversationService, Depends(get_conversation_service)
 ]
 
-def _get_message_service() -> MessageService :
+def _get_message_service(conn_ser:ConversationServiceDep) -> MessageService :
     msg_repo = MessageRepo()
 
     return MessageService(
-        msg_repo
+        msg_repo,
+        conn_ser
     )
 
 MessageServiceDep : TypeAlias = Annotated[MessageService , Depends(_get_message_service)]
