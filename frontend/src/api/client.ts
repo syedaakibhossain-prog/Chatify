@@ -26,9 +26,34 @@ function buildUrl(path: string): string {
   return `${API_BASE}${normalizedPath}`;
 }
 
-async function request<T>(path: string, opts: RequestOption = {}): Promise<T> {
+const NO_REFRESH_PATHS = [
+  "/auth/refresh",
+  "/auth/login",
+  "/auth/register",
+  "/auth/logout",
+];
+
+function shouldSkipRefresh(path: string): boolean {
+  return NO_REFRESH_PATHS.some((p) => path.includes(p));
+}
+
+//session refresh
+let refreshing: Promise<boolean> | null = null;
+export let onSessionExpired: () => void = () => { };
+export const setSessionExpiredHandler = (fn:() => void) => {onSessionExpired = fn}
+
+function refeshSession(): Promise<boolean>{
+  refreshing ??= fetch(buildUrl("api/v1/auth/refresh"), { method: "POST", credentials: "include" })
+    .then((r) => r.ok)
+    .catch(() => false)
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function request<T>(path: string, opts: RequestOption = {} , retried=false): Promise<T> {
 
   const url = buildUrl(path);
+
   const res = await fetch(url, {
     method: opts.method ?? "GET",
     headers: opts.body ? { "Content-Type": "application/json" } : undefined,
@@ -36,6 +61,13 @@ async function request<T>(path: string, opts: RequestOption = {}): Promise<T> {
     credentials: "include",
     signal: opts.signal,
   });
+
+  if (res.status === 401 && !shouldSkipRefresh(path)) {
+    if (!retried) {
+      if (await refeshSession()) return request<T>(path, opts, true);
+    }
+    onSessionExpired();
+  }
 
   if (res.status === 204) return undefined as T;
 
