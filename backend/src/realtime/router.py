@@ -1,7 +1,8 @@
 from typing import Annotated, TypeAlias
 
-from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.config import settings
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.service import ConversationService
 from src.database import get_db
@@ -66,6 +67,11 @@ async def websocket_endpoint(
     message_service : MessageServiceDep,
 ) -> None:
     # 1. Authenticate BEFORE accept
+    origin = ws.headers.get("origin")
+    if origin not in settings.allowed_origins_list:
+        await ws.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     user = await websocket_auth(db, ws, access_token)
     if user is None:
         return  # websocket_auth already closed the socket
