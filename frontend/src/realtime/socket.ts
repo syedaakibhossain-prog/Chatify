@@ -1,4 +1,5 @@
 import type { WsInbound } from "../types";
+import { refreshSessionOrExpire } from "../api/client";
 
 type Listener = (msg: WsInbound) => void;
 
@@ -15,18 +16,20 @@ class ChatSocket {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private shouldReconnect = false;
   private reconnectDelay = 2000;
+  private authExpired = false;
 
   connect(): void {
     if (this.ws && this.ws.readyState <= WebSocket.OPEN) return;
 
     this.shouldReconnect = true;
+    this.authExpired = false;
 
-
-    const url = "wss://chatify-xkst.onrender.com/v1/realtime/ws";
+    const url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/v1/realtime/ws`;
 
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
+      this.authExpired = false;
       this.reconnectDelay = 2000;
       this._startPing();
     };
@@ -34,6 +37,18 @@ class ChatSocket {
     this.ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as WsInbound;
+        if ((msg as { type?: string }).type === "auth:expired") {
+          this.authExpired = true;
+          refreshSessionOrExpire().then((ok) => {
+            if (!ok) {
+              this.shouldReconnect = false;
+              if (this.reconnectTimeout) {
+                clearTimeout(this.reconnectTimeout);
+                this.reconnectTimeout = null;
+              }
+            }
+          });
+        }
         this.listeners.forEach((fn) => fn(msg));
       } catch {
         // ignore malformed frames
@@ -108,6 +123,7 @@ class ChatSocket {
       this.pingInterval = null;
     }
   }
+
 }
 
 export const chatSocket = new ChatSocket();
