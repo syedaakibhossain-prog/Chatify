@@ -16,7 +16,7 @@ class ChatSocket {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private shouldReconnect = false;
   private reconnectDelay = 2000;
-  // private authExpired = false;
+  private authExpired = false;
 
   connect(): void {
     if (this.ws && this.ws.readyState <= WebSocket.OPEN) return;
