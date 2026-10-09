@@ -50,6 +50,12 @@ function refeshSession(): Promise<boolean>{
   return refreshing;
 }
 
+export async function refreshSessionOrExpire(): Promise<boolean> {
+  const ok = await refeshSession();
+  if (!ok) onSessionExpired();
+  return ok;
+}
+
 async function request<T>(path: string, opts: RequestOption = {} , retried=false): Promise<T> {
 
   const url = buildUrl(path);
@@ -64,9 +70,12 @@ async function request<T>(path: string, opts: RequestOption = {} , retried=false
 
   if (res.status === 401 && !shouldSkipRefresh(path)) {
     if (!retried) {
-      if (await refeshSession()) return request<T>(path, opts, true);
+      const refreshed = await refreshSessionOrExpire();
+      if (refreshed) return request<T>(path, opts, true);
+    } else {
+      onSessionExpired();
     }
-    onSessionExpired();
+    throw new ApiError(401, "Unauthorized");
   }
 
   if (res.status === 204) return undefined as T;
