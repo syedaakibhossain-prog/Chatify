@@ -1,10 +1,10 @@
+import datetime
 import uuid
 from typing import Annotated, TypeAlias
 
 from fastapi import Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from src.converseation.service import ConversationService
-from src.dependences import resolve_user_from_token
 from src.message.reposetory import MessageRepo
 from src.message.schemas import CreateMessage, MessageOut, Messages
 from src.model import Message
@@ -26,35 +26,35 @@ class MessageService:
     # @parameter : payload : content
     # @parameter : acess_token
     # @return  : MessageOut
-    async def send_message(
-        self,
-        db : AsyncSession,
-        conversation_id : uuid.UUID,
-        payload : CreateMessage,
-        access_token : AccessToken
-    ) -> MessageOut:
-        #varify the user
-        user = await resolve_user_from_token(
-            db,
-            access_token
-        )
-        if user is None :
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="YOU ARE NOT AN USER"
-            )
-
-        message = Message(
-            conversation_id=conversation_id,
-            sender_id=user.id,
-            content=payload.content
-        )
-
-        res = await self.message_repo.send_message(
-            db,
-            message
-        )
-        return res
+#     async def send_message(
+#         self,
+#         db : AsyncSession,
+#         conversation_id : uuid.UUID,
+#         payload : CreateMessage,
+#         access_token : AccessToken
+#     ) -> MessageOut:
+#         #varify the user
+#         user = await resolve_user_from_token(
+#             db,
+#             access_token
+#         )
+#         if user is None :
+#             raise HTTPException(
+#                 status_code=status.HTTP_401_UNAUTHORIZED,
+#                 detail="YOU ARE NOT AN USER"
+#             )
+#
+#         message = Message(
+#             conversation_id=conversation_id,
+#             sender_id=user.id,
+#             content=payload.content
+#         )
+#
+#         res = await self.message_repo.send_message(
+#             db,
+#             message
+#         )
+#         return res
 
     #get all the message from perticular conversation
     # @parameter : db
@@ -65,7 +65,9 @@ class MessageService:
         self,
         db : AsyncSession,
         conversation_id : uuid.UUID,
-        user_id:uuid.UUID
+        user_id:uuid.UUID,
+        before:datetime.datetime | None,
+        before_id:uuid.UUID | None
     ) -> Messages :
 
         if not await self.con_servoice.is_member(
@@ -80,7 +82,9 @@ class MessageService:
 
         res = await self.message_repo.fecth_messages(
             db,
-            conversation_id
+            conversation_id,
+            before=before,
+            before_id=before_id
         )
 
         return res

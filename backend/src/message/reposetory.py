@@ -1,8 +1,7 @@
 import datetime
 import uuid
-from typing import Optional
 
-from sqlalchemy import or_, and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.message.schemas import MessageOut, Messages
 from src.model import Message
@@ -36,8 +35,8 @@ class MessageRepo:
         db: AsyncSession,
         conversation_id: uuid.UUID,
         limit: int = 10,
-        before: Optional[datetime.datetime] = None,
-        before_id: Optional[uuid.UUID] = None,
+        before: datetime.datetime | None = None,
+        before_id: uuid.UUID | None = None,
     ) -> Messages:
 
         query = (
