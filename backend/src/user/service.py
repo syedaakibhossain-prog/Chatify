@@ -7,11 +7,23 @@ from src.user.schemas import UserResults, UserSearchResults
 
 
 class UserService:
+    """
+    Service layer for user lookup operations.
+
+    Wraps UserRepo database calls with HTTP error handling so routes
+    receive clean exceptions when users are not found.
+    """
 
     def __init__(
         self,
         repo: UserRepo
     ) -> None:
+        """
+        Initializes UserService with a user repository.
+
+        Parameters:
+          repo (UserRepo): The repository used for all user database lookups.
+        """
         self.repo = repo
 
     # @dec:search user by username

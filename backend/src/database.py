@@ -8,6 +8,13 @@ from src.config import settings
 
 
 class BaseModel(DeclarativeBase):
+    """
+    Base class for all SQLAlchemy ORM models in the application.
+
+    All database table models (User, Conversation, Member, Message) inherit
+    from this class. SQLAlchemy uses it to track metadata and generate
+    the schema via `BaseModel.metadata.create_all()`.
+    """
     pass
 
 
@@ -28,5 +35,17 @@ SessionLocal = async_sessionmaker(
 
 
 async def get_db():
+    """
+    FastAPI dependency that provides a database session per request.
+
+    Opens an async SQLAlchemy session, yields it for use inside a route or
+    dependency, then automatically closes it when the request is done.
+
+    Parameters:
+      None
+
+    Yields:
+      AsyncSession: An active async database session ready for queries.
+    """
     async with SessionLocal() as db:
         yield db

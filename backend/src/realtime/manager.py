@@ -9,6 +9,19 @@ from fastapi import WebSocket
 logger = logging.getLogger(__name__)
 
 class Manager :
+    """
+    In-memory WebSocket connection manager.
+
+    Tracks which WebSocket connections belong to each user and which users
+    are in which conversation rooms. All state is held in-memory (no Redis),
+    so this is single-process only.
+
+    Attributes:
+      _user_socket (dict[UUID, set[WebSocket]]): Maps a user UUID to all their active sockets.
+      _conversation_rooms (dict[UUID, set[UUID]]): Maps a conversation UUID to the set of
+                                                    online user UUIDs currently in that room.
+      _lock (asyncio.Lock): Ensures thread-safe mutations of the above dicts.
+    """
 
     def __init__(
         self
@@ -24,6 +37,16 @@ class Manager :
         user_id : uuid.UUID,
         ws : WebSocket
     ) -> None :
+        """
+        Registers a new WebSocket connection for a user.
+
+        Parameters:
+          user_id (uuid.UUID): The UUID of the connecting user.
+          ws (WebSocket)     : The WebSocket connection to register.
+
+        Returns:
+          None
+        """
 
         async with self._lock :
             self._user_socket[user_id].add(ws)
@@ -33,6 +56,19 @@ class Manager :
         user_id : uuid.UUID,
         ws : WebSocket
     ) -> None :
+        """
+        Removes a WebSocket connection for a user.
+
+        If this was the user's last active socket, also removes them from all
+        conversation rooms so they no longer receive broadcasts.
+
+        Parameters:
+          user_id (uuid.UUID): The UUID of the disconnecting user.
+          ws (WebSocket)     : The WebSocket connection to remove.
+
+        Returns:
+          None
+        """
 
         async with self._lock :
             socket = self._user_socket.get(user_id)
@@ -50,6 +86,15 @@ class Manager :
         self,
         user_id : uuid.UUID
     ) -> bool :
+        """
+        Checks whether a user currently has at least one active WebSocket connection.
+
+        Parameters:
+          user_id (uuid.UUID): The UUID of the user to check.
+
+        Returns:
+          bool: True if the user has at least one open socket, False otherwise.
+        """
 
         async with self._lock :
             return bool(self._user_socket.get(user_id))
@@ -63,6 +108,16 @@ class Manager :
         user_id : uuid.UUID,
         conversation_ids : list[uuid.UUID]
     ) -> None :
+        """
+        Adds a user to one or more conversation rooms so they receive broadcasts.
+
+        Parameters:
+          user_id (uuid.UUID)               : The UUID of the user to add to the rooms.
+          conversation_ids (list[uuid.UUID]): The list of conversation UUIDs to join.
+
+        Returns:
+          None
+        """
 
         async with self._lock :
             for cid in conversation_ids :
@@ -73,6 +128,16 @@ class Manager :
         user_id : uuid.UUID,
         conversation_id : uuid.UUID
     ) -> None :
+        """
+        Removes a user from a specific conversation room.
+
+        Parameters:
+          user_id (uuid.UUID)        : The UUID of the user to remove.
+          conversation_id (uuid.UUID): The UUID of the conversation room to leave.
+
+        Returns:
+          None
+        """
 
         async with self._lock :
             self._conversation_rooms[conversation_id].discard(user_id)
@@ -81,6 +146,15 @@ class Manager :
         self,
         conversation_id : uuid.UUID
     ) -> set[uuid.UUID] :
+        """
+        Returns the set of online user UUIDs currently in a conversation room.
+
+        Parameters:
+          conversation_id (uuid.UUID): The UUID of the conversation room to inspect.
+
+        Returns:
+          set[uuid.UUID]: A snapshot copy of the set of user UUIDs in that room.
+        """
 
         async with self._lock :
             return set(self._conversation_rooms.get(conversation_id , set()))
@@ -93,6 +167,16 @@ class Manager :
         user_id: uuid.UUID,
         payload: dict[str, Any]
     ) -> None:
+        """
+        Sends a JSON payload to all active WebSocket connections of a specific user.
+
+        Parameters:
+          user_id (uuid.UUID)       : The UUID of the target user.
+          payload (dict[str, Any])  : The JSON-serializable message to send.
+
+        Returns:
+          None
+        """
 
         async with self._lock:
             sockets = list(self._user_socket.get(user_id, set()))
@@ -104,6 +188,18 @@ class Manager :
         payload : dict[str , Any],
         user_id : uuid.UUID | None = None,
     ) -> None :
+        """
+        Broadcasts a JSON payload to all members of a conversation room,
+        optionally excluding a specific user (e.g. the message sender).
+
+        Parameters:
+          conversation_id (uuid.UUID)     : The UUID of the target conversation room.
+          payload (dict[str, Any])        : The JSON-serializable message to broadcast.
+          user_id (uuid.UUID | None)      : If provided, this user is excluded from the broadcast.
+
+        Returns:
+          None
+        """
 
         members = await self.members_of(
             conversation_id
@@ -122,6 +218,19 @@ class Manager :
         sockets : list[WebSocket],
         payload : dict[str , Any]
     ) -> None :
+        """
+        Sends a JSON payload concurrently to a list of WebSocket connections.
+
+        Uses asyncio.gather with return_exceptions=True so a failure on one
+        socket does not block delivery to the others.
+
+        Parameters:
+          sockets (list[WebSocket]) : The list of active WebSocket connections to send to.
+          payload (dict[str, Any])  : The JSON-serializable message to send.
+
+        Returns:
+          None
+        """
 
         await asyncio.gather(
             *(self._safe_send(ws,payload) for ws in sockets),
@@ -134,6 +243,19 @@ class Manager :
         ws : WebSocket,
         payload : dict[str , Any]
     ) -> None :
+        """
+        Sends a JSON payload to a single WebSocket connection, swallowing exceptions.
+
+        If the socket is closed or any error occurs during send, the exception is
+        logged but not re-raised, ensuring one bad connection does not crash others.
+
+        Parameters:
+          ws (WebSocket)           : The WebSocket connection to send to.
+          payload (dict[str, Any]) : The JSON-serializable message to send.
+
+        Returns:
+          None
+        """
 
         try :
             await ws.send_json(payload)

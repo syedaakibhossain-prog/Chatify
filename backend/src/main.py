@@ -17,6 +17,23 @@ logger = logging.getLogger("chatify")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Application lifespan context manager — runs startup and shutdown logic.
+
+    Startup (before `yield`):
+      - Creates all database tables defined in SQLAlchemy models (if they don't exist).
+      - Pings Redis to verify the connection is alive; raises an error and aborts startup
+        if Redis is unavailable.
+
+    Shutdown (after `yield`):
+      - Closes the Redis connection pool gracefully.
+
+    Parameters:
+      app (FastAPI): The FastAPI application instance (provided by FastAPI automatically).
+
+    Returns:
+      None — this is an async generator used as a context manager.
+    """
 
     async with engine.begin() as conn:
         await conn.run_sync(
@@ -57,4 +74,13 @@ app.include_router(realtime_router)
 
 @app.get("/")
 def root():
+    """
+    Health check endpoint.
+
+    Parameters:
+      None
+
+    Returns:
+      dict: {"status": "ok"} — confirms the API server is running.
+    """
     return {"status" : "ok"}

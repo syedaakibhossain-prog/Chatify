@@ -23,11 +23,23 @@ from src.utils import (
 
 
 class AuthService:
+    """
+    Service layer handling all authentication business logic.
+
+    Depends on UserRepository for database access. Provides methods to
+    register new users, log existing users in, and refresh access tokens.
+    """
 
     def __init__(
         self,
         user_repo: UserRepository,
     ):
+        """
+        Initializes the AuthService with a user repository.
+
+        Parameters:
+          user_repo (UserRepository): The repository used for all user-related DB operations.
+        """
         self.user_repo = user_repo
 
 
@@ -37,6 +49,26 @@ class AuthService:
         user_request: UserRequest,
         db: AsyncSession,
     ) -> tuple[UserResponse , str , str]:
+        """
+        Registers a new user account.
+
+        Steps:
+          1. Checks that the username is not already taken (raises 409 if it is).
+          2. Checks that the email is not already registered (raises 409 if it is).
+          3. Hashes the plain-text password with bcrypt.
+          4. Creates and persists the User record in the database.
+          5. Generates a JWT access token and refresh token for the new user.
+
+        Parameters:
+          user_request (UserRequest): Pydantic schema with username, email, and password.
+          db (AsyncSession)         : The async database session.
+
+        Returns:
+          tuple[UserResponse, str, str]: A tuple of (UserResponse, access_token, refresh_token).
+
+        Raises:
+          HTTPException (409): If the username or email is already in use.
+        """
 
         existing_username = (
             await self.user_repo.get_user_by_name(
@@ -104,6 +136,25 @@ class AuthService:
         login_request: LoginRequest,
         db: AsyncSession,
     ) -> tuple[User, str, str]:
+        """
+        Authenticates a user and returns a session token pair.
+
+        Steps:
+          1. Looks up the user by email address (raises 401 if not found).
+          2. Verifies the provided plain-text password against the stored bcrypt hash
+             (raises 401 if the password does not match).
+          3. Generates a new access token and refresh token.
+
+        Parameters:
+          login_request (LoginRequest): Pydantic schema with email and password.
+          db (AsyncSession)           : The async database session.
+
+        Returns:
+          tuple[User, str, str]: A tuple of (User ORM object, access_token, refresh_token).
+
+        Raises:
+          HTTPException (401): If the email is not registered or the password is wrong.
+        """
 
         # Find user
 
@@ -156,6 +207,26 @@ class AuthService:
         refresh_token: str,
         db: AsyncSession,
     ) -> tuple[User, str]:
+        """
+        Issues a new access token using a valid refresh token.
+
+        Steps:
+          1. Verifies the refresh token's signature and expiry (raises 401 if invalid).
+          2. Extracts the 'sub' (user ID) from the token payload.
+          3. Parses the user ID string into a UUID (raises 401 if malformed).
+          4. Fetches the User from the database (raises 401 if the account no longer exists).
+          5. Creates and returns a fresh access token.
+
+        Parameters:
+          refresh_token (str) : The raw JWT refresh token string.
+          db (AsyncSession)   : The async database session.
+
+        Returns:
+          tuple[User, str]: A tuple of (User ORM object, new_access_token).
+
+        Raises:
+          HTTPException (401): If the refresh token is invalid, expired, or the user is gone.
+        """
 
         payload = verify_refresh_token(
             refresh_token

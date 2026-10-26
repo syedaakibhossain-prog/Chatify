@@ -14,10 +14,23 @@ logger = logging.getLogger("chatify")
 
 @dataclass(frozen=True)
 class RateLimite:
+    """
+    Immutable configuration for a rate limit rule.
+
+    Attributes:
+      limit (int)         : Maximum number of requests allowed within the window.
+      window_second (int) : Duration of the sliding window in seconds.
+    """
     limit: int
     window_second: int
 
     def __str__(self) -> str:
+        """
+        Returns a human-readable string representation of the rate limit rule.
+
+        Returns:
+          str: e.g. '5req/60s'
+        """
         return f"{self.limit}req/{self.window_second}s"
 
 
@@ -50,8 +63,20 @@ return {1, 0}
 
 
 class RateLimiter:
+    """
+    Implements a Redis-backed sliding-window rate limiter.
+
+    Uses a Lua script executed atomically on the Redis server to evaluate
+    whether a request is within the allowed rate, preventing race conditions.
+    """
 
     def __init__(self, redis_client: redis.Redis) -> None:
+        """
+        Initializes the RateLimiter with a Redis client.
+
+        Parameters:
+          redis_client (redis.Redis): The async Redis client to use for rate limit checks.
+        """
         self.redis = redis_client
 
     async def check(
@@ -60,6 +85,24 @@ class RateLimiter:
         identity: str,
         rate: RateLimite,
     ) -> None:
+        """
+        Checks whether the given identity has exceeded the rate limit for the given scope.
+
+        If rate limiting is disabled in settings, returns immediately. Otherwise,
+        executes the sliding-window Lua script on Redis. If the limit is exceeded,
+        raises HTTP 429 with a 'Retry-After' header.
+
+        Parameters:
+          scope (str)        : A string key grouping requests (e.g. 'auth:login').
+          identity (str)     : A string identifying the requester (e.g. 'ip:1.2.3.4').
+          rate (RateLimite)  : The rate limit rule (limit + window) to enforce.
+
+        Returns:
+          None
+
+        Raises:
+          HTTPException (429): If the rate limit is exceeded, with a Retry-After header.
+        """
 
         if not settings.rate_limit_enabled:
             return

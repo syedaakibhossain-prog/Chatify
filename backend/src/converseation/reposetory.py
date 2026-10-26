@@ -7,6 +7,12 @@ from src.model import Conversation, Member, Message, User
 
 
 class ConversetionRepo:
+    """
+    Data access layer for Conversation-related database operations.
+
+    Provides async query methods for creating conversations, checking membership,
+    fetching conversation lists, and marking messages as read.
+    """
 
     async def create_conversation_with_member(
         self,
@@ -14,6 +20,20 @@ class ConversetionRepo:
         pair_key:str,
         user_ids:list[uuid.UUID]
     ) -> Conversation:
+        """
+        Creates a new Conversation and adds all given users as Members in one transaction.
+
+        Deduplicates user_ids before inserting to prevent duplicate Member rows.
+        Uses db.flush() to get the Conversation.id before inserting Members, then commits.
+
+        Parameters:
+          db (AsyncSession)        : The async database session.
+          pair_key (str)           : The unique key identifying this pair of users.
+          user_ids (list[uuid.UUID]): The UUIDs of all users to add as members.
+
+        Returns:
+          Conversation: The newly created and DB-refreshed Conversation ORM object.
+        """
         unique_user_ids = list(dict.fromkeys(user_ids))
         conv = Conversation(pair_key=pair_key)
         db.add(conv)
@@ -33,6 +53,17 @@ class ConversetionRepo:
         conversation_id:uuid.UUID,
         user_id:uuid.UUID
     ) -> bool:
+        """
+        Checks whether a specific user is a member of a given conversation.
+
+        Parameters:
+          db (AsyncSession)              : The async database session.
+          conversation_id (uuid.UUID)    : The UUID of the conversation to check.
+          user_id (uuid.UUID)            : The UUID of the user to check.
+
+        Returns:
+          bool: True if the user is a member, False otherwise.
+        """
 
         query = await db.execute(
             select(Member)
@@ -54,6 +85,16 @@ class ConversetionRepo:
         db:AsyncSession,
         conversation_id:uuid.UUID
     ) -> Conversation | None:
+        """
+        Fetches a single Conversation by its UUID primary key.
+
+        Parameters:
+          db (AsyncSession)           : The async database session.
+          conversation_id (uuid.UUID) : The UUID of the conversation to fetch.
+
+        Returns:
+          Conversation | None: The matching Conversation ORM object, or None if not found.
+        """
 
         query = await db.execute(
             select(Conversation)
@@ -70,6 +111,16 @@ class ConversetionRepo:
         db:AsyncSession,
         user_id:uuid.UUID
     ) ->list[Conversation] | None:
+        """
+        Returns all Conversation objects that a user belongs to, ordered by most recent activity.
+
+        Parameters:
+          db (AsyncSession)  : The async database session.
+          user_id (uuid.UUID): The UUID of the user whose conversations to fetch.
+
+        Returns:
+          list[Conversation]: A list of Conversation ORM objects (may be empty).
+        """
 
         query = await db.execute(
             select(Conversation)
@@ -86,6 +137,22 @@ class ConversetionRepo:
         conversation_id : uuid.UUID,
         user_id : uuid.UUID
     ) -> None :
+        """
+        Marks all unread messages in a conversation as read, excluding messages sent by the user.
+
+        Executes a bulk UPDATE on the messages table, setting is_read=True for all messages
+        in the given conversation that were sent by someone other than user_id and haven't
+        been read yet.
+
+        Parameters:
+          db (AsyncSession)           : The async database session.
+          conversation_id (uuid.UUID) : The UUID of the conversation to mark as read.
+          user_id (uuid.UUID)         : The UUID of the user who is reading (their own messages
+                                        are excluded from the update).
+
+        Returns:
+          None
+        """
 
         await db.execute(
             update(Message)
@@ -105,6 +172,19 @@ class ConversetionRepo:
         db:AsyncSession,
         pair_key:str
     ) -> Conversation | None:
+        """
+        Looks up an existing Conversation by its pair_key (internal use only).
+
+        Also eagerly loads the conversation's members via selectinload to avoid
+        N+1 queries when checking participants.
+
+        Parameters:
+          db (AsyncSession) : The async database session.
+          pair_key (str)    : The deterministic key for the user-pair (e.g. 'uuid1:uuid2').
+
+        Returns:
+          Conversation | None: The matching Conversation with members loaded, or None.
+        """
 
         query = await db.execute(
             select(Conversation)
@@ -121,6 +201,20 @@ class ConversetionRepo:
         db: AsyncSession,
         user_id: uuid.UUID,
     ) -> list[tuple[uuid.UUID, str]]:
+        """
+        Returns a list of (conversation_id, partner_username) tuples for the given user.
+
+        Uses two aliased Member joins to find the *other* participant in each conversation
+        (i.e. the person who is NOT the current user), then joins to User to get their username.
+        Results are ordered by conversation.updated_at descending (most recent first).
+
+        Parameters:
+          db (AsyncSession)  : The async database session.
+          user_id (uuid.UUID): The UUID of the current user.
+
+        Returns:
+          list[tuple[uuid.UUID, str]]: List of (conversation_id, other_user_username) rows.
+        """
 
         me = aliased(Member)
         others = aliased(Member)
@@ -143,6 +237,19 @@ class ConversetionRepo:
         db:AsyncSession,
         user_id:uuid.UUID
     ) -> list[uuid.UUID]:
+        """
+        Returns a flat list of conversation UUIDs that a user is a member of.
+
+        Used internally (e.g. by the WebSocket router) to join a user to all their
+        conversation rooms on connection.
+
+        Parameters:
+          db (AsyncSession)  : The async database session.
+          user_id (uuid.UUID): The UUID of the user.
+
+        Returns:
+          list[uuid.UUID]: A list of conversation UUIDs the user belongs to.
+        """
 
         query = await db.execute(
                 select(Conversation.id)
