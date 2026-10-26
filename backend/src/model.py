@@ -7,6 +7,23 @@ from src.database import BaseModel
 
 
 class User(BaseModel):
+    """
+    ORM model representing the 'users' database table.
+
+    Stores each registered user's account information.
+
+    Columns:
+      id (UUID)            : Primary key, auto-generated UUID.
+      username (str)       : Unique display name, max 20 characters.
+      name (str)           : Optional full name, max 20 characters.
+      email (str)          : Unique email address, max 120 characters.
+      hashed_password (str): Bcrypt-hashed password string, max 255 characters.
+      last_seen (datetime) : Timestamp of the user's last activity (UTC).
+
+    Relationships:
+      conversation_memberships: All Member rows linking this user to conversations.
+      messages               : All messages sent by this user.
+    """
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -29,6 +46,24 @@ class User(BaseModel):
 
 
 class Conversation(BaseModel):
+    """
+    ORM model representing the 'conversations' database table.
+
+    Each row represents a unique 1-on-1 chat channel between two users.
+
+    Columns:
+      id (UUID)         : Primary key, auto-generated UUID.
+      created_at        : UTC timestamp when the conversation was first created.
+      is_read (bool)    : Whether the conversation has been read (currently unused for groups).
+      updated_at        : UTC timestamp that auto-updates on every change; indexed for fast
+                          sorting of the chat list by most-recent activity.
+      pair_key (str)    : Deterministic key derived from both user UUIDs (sorted and joined
+                          with ':') to guarantee uniqueness and prevent duplicate conversations.
+
+    Relationships:
+      members  : List of Member rows (the two participants).
+      messages : All messages belonging to this conversation.
+    """
     __tablename__ = "conversations"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -64,6 +99,23 @@ class Conversation(BaseModel):
 
 
 class Member(BaseModel):
+    """
+    ORM model representing the 'members' database table.
+
+    A join table linking users to conversations (many-to-many).
+    Each row records one user's membership in one conversation.
+
+    Columns:
+      conversation_id (UUID): FK to conversations.id; part of composite PK.
+      user_id (UUID)        : FK to users.id; part of composite PK.
+      joined_at (datetime)  : UTC timestamp when the user joined the conversation.
+      last_read_at (datetime): UTC timestamp of the last message the user read
+                               (nullable — None if the user has never opened the chat).
+
+    Relationships:
+      conversation : The parent Conversation object.
+      user         : The parent User object.
+    """
     __tablename__ = "members"
 
     conversation_id: Mapped[uuid.UUID] = mapped_column(
@@ -86,6 +138,28 @@ class Member(BaseModel):
 
 
 class Message(BaseModel):
+    """
+    ORM model representing the 'messages' database table.
+
+    Each row stores a single chat message sent inside a conversation.
+
+    Columns:
+      id (UUID)              : Primary key, auto-generated UUID.
+      conversation_id (UUID) : FK to the conversation this message belongs to.
+      sender_id (UUID)       : FK to the user who sent the message.
+      content (str)          : The message body text, max 1000 characters.
+      message_type (str)     : Type of message (e.g. 'text'), max 20 characters.
+      created_at (datetime)  : UTC timestamp when the message was created; indexed
+                               for efficient time-based queries.
+      is_read (bool)         : Whether the recipient has read this message.
+      is_deleted (bool)      : Soft-delete flag; True if the message was deleted.
+      deleted_at (datetime)  : UTC timestamp of when the message was soft-deleted
+                               (nullable — None if the message is not deleted).
+
+    Relationships:
+      conversation : The parent Conversation object.
+      sender       : The User who sent the message.
+    """
     __tablename__ = "messages"
 
     id: Mapped[uuid.UUID] = mapped_column(

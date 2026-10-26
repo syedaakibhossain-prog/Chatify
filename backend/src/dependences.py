@@ -24,6 +24,18 @@ async def get_user(
         default=None
     )
 ) -> User | None:
+    """
+    FastAPI dependency that resolves the current user from the 'access_token' cookie
+    and attaches it to request.state.user for optional access later in the request cycle.
+
+    Parameters:
+      request (Request)          : The incoming FastAPI request object.
+      db (AsyncSession)          : Injected database session.
+      access_token (str | None)  : The JWT access token read from the HTTP-only cookie.
+
+    Returns:
+      User | None: The authenticated User ORM object, or None if authentication fails.
+    """
 
     user = await resolve_user_from_token(
         db,
@@ -37,6 +49,26 @@ async def resolve_user_from_token(
     db:AsyncSession,
     access_token:str | None
 ) -> User:
+    """
+    Resolves and returns a User from a JWT access token string.
+
+    Steps performed:
+      1. Raises HTTP 401 if access_token is missing.
+      2. Decodes and verifies the JWT; raises 401 if invalid or expired.
+      3. Extracts the 'sub' (user ID) claim from the token payload.
+      4. Parses the user ID string into a UUID; raises 401 if malformed.
+      5. Looks up the User in the database by UUID; raises 401 if not found.
+
+    Parameters:
+      db (AsyncSession)         : The async database session for the DB lookup.
+      access_token (str | None) : The raw JWT access token string.
+
+    Returns:
+      User: The authenticated User ORM object.
+
+    Raises:
+      HTTPException (401): If the token is missing, invalid, expired, or the user no longer exists.
+    """
 
     if not access_token:
         raise HTTPException(

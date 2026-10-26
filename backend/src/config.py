@@ -32,6 +32,16 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins_list(self) -> list[str]:
+        """
+        Parses the comma-separated ALLOWED_ORIGINS string into a Python list.
+
+        Parameters:
+          None (reads self.ALLOWED_ORIGINS)
+
+        Returns:
+          list[str]: A list of cleaned origin URLs allowed for CORS,
+                     e.g. ["http://localhost:5173", "https://chatify.app"].
+        """
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
 
     # ─── Database ────────────────────────────────────────
@@ -58,6 +68,22 @@ class Settings(BaseSettings):
     @field_validator("JWT_ACCESS_SECRET_KEY", "JWT_REFRESH_SECRET_KEY")
     @classmethod
     def secrets_must_differ(cls, v: str, info) -> str:
+        """
+        Pydantic field validator that enforces minimum security for JWT secrets.
+
+        Rejects secrets shorter than 32 characters unless they start with the
+        'dev-' prefix (which indicates a safe development default).
+
+        Parameters:
+          v (str): The secret value being validated.
+          info: Pydantic FieldValidationInfo object with context about the field.
+
+        Returns:
+          str: The validated secret value, unchanged.
+
+        Raises:
+          ValueError: If the secret is < 32 characters and is not a dev default.
+        """
         # Prevents copy-paste mistakes where both secrets are identical
         other_field = (
             "JWT_REFRESH_SECRET_KEY"
@@ -72,6 +98,22 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    """
+    Creates and returns the singleton application Settings instance.
+
+    Cached with lru_cache(maxsize=1) so the .env file is only parsed once
+    per process. In production, also validates that dev-placeholder secrets
+    are NOT in use and that DEBUG mode is disabled.
+
+    Parameters:
+      None
+
+    Returns:
+      Settings: The fully validated application settings object.
+
+    Raises:
+      RuntimeError: If running in production with insecure default secrets or DEBUG=True.
+    """
     settings = Settings()
 
     if settings.ENVIRONMENT == "production":

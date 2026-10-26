@@ -11,6 +11,13 @@ from src.realtime.schemas import outbound
 
 
 class RealTimeHandler :
+    """
+    Handles inbound WebSocket events for a single authenticated user connection.
+
+    Routes incoming JSON messages to the appropriate event handler method
+    (on_message_send, on_typing_start, on_typing_stop, on_message_read) based
+    on the 'type' field of the incoming payload.
+    """
     def __init__(
         self,
         ws : WebSocket,
@@ -19,6 +26,16 @@ class RealTimeHandler :
         db : AsyncSession,
         user : User
     ) -> None :
+        """
+        Initializes the handler with all required dependencies.
+
+        Parameters:
+          ws (WebSocket)                         : The active WebSocket connection for this user.
+          conversation_service (ConversationService): Used to verify conversation membership.
+          message_service (MessageService)       : Used to persist and retrieve messages.
+          db (AsyncSession)                      : The async database session for this connection.
+          user (User)                            : The authenticated User ORM object.
+        """
 
         self.ws = ws
         self.user = user
@@ -31,6 +48,19 @@ class RealTimeHandler :
         self,
         data : dict[str , Any]
     ) -> None :
+        """
+        Routes an incoming WebSocket message to the correct event handler.
+
+        Reads the 'type' field from the data dict (e.g. 'message:send') and
+        calls the matching method (e.g. on_message_send). Sends an error back
+        if the type is missing or unknown.
+
+        Parameters:
+          data (dict[str, Any]): The parsed JSON payload received from the WebSocket.
+
+        Returns:
+          None
+        """
         event_type = data.get("type")
 
 
@@ -67,6 +97,26 @@ class RealTimeHandler :
         self,
         data : dict[str , Any]
     ) -> None :
+        """
+        Handles a 'message:send' event from the WebSocket client.
+
+        Steps:
+          1. Parses the conversation_id from the data.
+          2. Validates the message content (non-empty, max 1000 chars).
+          3. Verifies the sender is a member of the conversation.
+          4. Persists the message via MessageService.
+          5. Sends an 'message:ack' confirmation back to the sender.
+          6. Broadcasts a 'message:new' event to all OTHER members of the conversation.
+
+        Parameters:
+          data (dict[str, Any]): The WebSocket payload. Expected keys:
+            - conversation_id (str): UUID of the target conversation.
+            - content (str)        : The message text.
+            - temp_id (str)        : A client-generated temp ID echoed back in the ack.
+
+        Returns:
+          None
+        """
 
         conversation_id = await self._parse_conversation_id(data)
         if conversation_id is None:
@@ -110,6 +160,17 @@ class RealTimeHandler :
         self,
         data : dict[str , Any]
     ) -> None :
+        """
+        Handles a 'typing:start' event — notifies other conversation members that this
+        user has started typing.
+
+        Parameters:
+          data (dict[str, Any]): WebSocket payload. Expected key:
+            - conversation_id (str): UUID of the conversation where the user is typing.
+
+        Returns:
+          None
+        """
 
         conversation_id = await self._parse_conversation_id(data)
         if conversation_id is None:
@@ -139,6 +200,17 @@ class RealTimeHandler :
         self,
         data : dict[str , Any]
     ) -> None :
+        """
+        Handles a 'typing:stop' event — notifies other conversation members that this
+        user has stopped typing.
+
+        Parameters:
+          data (dict[str, Any]): WebSocket payload. Expected key:
+            - conversation_id (str): UUID of the conversation where the user stopped typing.
+
+        Returns:
+          None
+        """
 
         conversation_id = await self._parse_conversation_id(data)
         if conversation_id is None:
@@ -169,6 +241,15 @@ class RealTimeHandler :
         self,
         conversation_id:uuid.UUID
     ) -> bool:
+        """
+        Verifies the current user is a member of a conversation, sending an error if not.
+
+        Parameters:
+          conversation_id (uuid.UUID): The UUID of the conversation to check.
+
+        Returns:
+          bool: True if the user is a member, False if not (error already sent to the client).
+        """
         ok = await self.conversation_service.is_member(
             db=self.db,
             conversation_id=conversation_id,
@@ -182,6 +263,17 @@ class RealTimeHandler :
         self,
         data : dict[str , Any]
     ) -> None :
+        """
+        Handles a 'message:read' event — marks all unread messages in a conversation as read
+        and broadcasts a 'read:update' event to all other members.
+
+        Parameters:
+          data (dict[str, Any]): WebSocket payload. Expected key:
+            - conversation_id (str): UUID of the conversation to mark as read.
+
+        Returns:
+          None
+        """
         conversation_id = await self._parse_conversation_id(data)
         if conversation_id is None or not await self._require_member(conversation_id=conversation_id):
             return
@@ -205,6 +297,17 @@ class RealTimeHandler :
 
     @staticmethod
     def _serialize(message) -> dict:
+        """
+        Converts a MessageOut Pydantic object into a plain JSON-serializable dict.
+
+        Parameters:
+          message: A MessageOut schema object with id, conversation_id, sender_id,
+                   content, message_type, created_at, and is_deleted fields.
+
+        Returns:
+          dict: A plain dictionary with all fields serialized to JSON-safe types
+                (UUIDs as strings, datetime as ISO 8601 string).
+        """
         return {
             "id": str(message.id),
             "conversation_id": str(message.conversation_id),
