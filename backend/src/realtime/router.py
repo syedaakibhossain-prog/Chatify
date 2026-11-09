@@ -2,6 +2,7 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.config import settings
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.service import ConversationService
@@ -14,6 +15,8 @@ from src.realtime.manager import manager
 from src.realtime.schemas import outbound
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
+from src.cache.cache import CacheService
+from src.redis.redisClient import get_redis
 
 DbSession: TypeAlias = Annotated[AsyncSession, Depends(get_db)]
 AccessToken: TypeAlias = Annotated[str | None, Cookie()]
@@ -31,7 +34,11 @@ UserServiceDep: TypeAlias = Annotated[UserService, Depends(get_user_service)]
 def get_conversation_service(
     user_ser: UserServiceDep,
 ) -> ConversationService:
-    return ConversationService(ConversetionRepo(), user_ser)
+    return ConversationService(ConversetionRepo(
+        CacheService(get_redis)),
+        user_ser,
+        CacheService(get_redis)
+    )
 
 
 ConversationServiceDep: TypeAlias = Annotated[

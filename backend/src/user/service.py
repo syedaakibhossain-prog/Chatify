@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio.session import AsyncSession
+
 from src.user.reposetory import UserRepo
 from src.user.schemas import UserResults, UserSearchResults
 

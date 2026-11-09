@@ -2,6 +2,7 @@ from typing import Annotated, TypeAlias
 
 from fastapi import Cookie, HTTPException, WebSocket, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.dependences import resolve_user_from_token
 from src.model import User
 

@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.model import User
 from src.user.schemas import UserResults, UserSearchResults
 

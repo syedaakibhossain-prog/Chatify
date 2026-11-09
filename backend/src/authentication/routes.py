@@ -9,6 +9,7 @@ from fastapi import (
     status,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.authentication.reposetory import (
     UserRepository,
 )
@@ -229,3 +230,13 @@ async def get_current_user(
         "username" : current_user.username,
         "email" : current_user.email
     }
+
+"""Reset password route"""
+# @router.post(
+#     "/reset-password"
+# )
+# async def reset_password(
+#     req:ResetPassword,
+#     db: Annotated[AsyncSession , Depends(get_db)],
+# ):
+#     pass

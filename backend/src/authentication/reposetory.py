@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.model import User
 
 
@@ -12,6 +13,7 @@ class UserRepository:
     Provides low-level async database query methods used by AuthService.
     All methods accept an AsyncSession and return ORM User objects or None.
     """
+
 
     async def get_user_by_email(
         self,
@@ -52,6 +54,10 @@ class UserRepository:
         Returns:
           User | None: The matching User ORM object, or None if not found.
         """
+#         cache_key = f"user{user_id}"
+#
+#         await _get_chahe
+
 
         result = await db.execute(
             select(User).where(
@@ -109,3 +115,26 @@ class UserRepository:
         await db.refresh(user)
 
         return user
+    # later update (after email varification implemented)
+    # async def _reset_password(
+    #     self,
+    #     db:AsyncSession,
+    #     email:str,
+    #     new_password:str,
+    # ) -> None:
+    #     """
+    #     Change the password for the user with given email
+    #         Parameter:
+    #             db(AsyncSession): async db sesssion,
+    #             email:email of the user as string,
+    #             new_password: new hashed password as string
+    #         Return:
+    #             None
+    #     """
+    #     query =(
+    #         Update(User)
+    #         .where(User.email == email)
+    #         .values(hashed_password = new_password) #something wrong here
+    #     )
+    #     await db.execute(query)
+    #     await db.commit()
