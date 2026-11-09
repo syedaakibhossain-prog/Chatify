@@ -3,6 +3,8 @@ from typing import Annotated, TypeAlias
 
 from fastapi import Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.cache.cache import CacheService
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.schemas import ConversationResponse
 from src.dependences import resolve_user_from_token
@@ -24,10 +26,12 @@ class ConversationService:
     def __init__(
         self,
         conversation_repo:ConversetionRepo,
-        user_service:UserService
+        user_service:UserService,
+        _cache_service:CacheService
     ) -> None:
         self.repo = conversation_repo
         self.user_service = user_service
+        self._cache_service = _cache_service
 
     # @dec: create conversation using member
     # it was also verify user from access token , and user_id
@@ -41,12 +45,13 @@ class ConversationService:
         user_id:uuid.UUID,
         sender_id : uuid.UUID
     ) -> ConversationResponse | None:
-        print(f"[DEBUG] create_conversation: user_id={user_id!r}  sender_id={sender_id!r}  match={user_id == sender_id}")
+        # print(f"[DEBUG] create_conversation: user_id={user_id!r}  sender_id={sender_id!r}  match={user_id == sender_id}")
         if user_id == sender_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Cannot create a conversation with yourself",
             )
+
 
         user1 = await self.user_service.fun_search_user_by_id(
             db,
@@ -107,7 +112,7 @@ class ConversationService:
             access_token
         )
 
-        if not await self.repo.is_member(
+        if not await self.is_member(
             db,
             conversation_id,
             is_user.id
@@ -156,12 +161,30 @@ class ConversationService:
         conversation_id:uuid.UUID,
         user_id:uuid.UUID
     ) -> bool :
+        cache_key = f"member{conversation_id}:{user_id}"
+        cached =  await self._cache_service._get(key=cache_key)
+        if cached:
+            return cached
 
-        return await self.repo.is_member(
-            db,
-            conversation_id,
-            user_id
+        _member = await self.repo.is_member(
+            db=db,
+            conversation_id=conversation_id,
+            user_id=user_id
         )
+
+        if _member is True:
+            await self._cache_service._set(
+                key=cache_key,
+                value=True,
+                ttl=300
+            )
+
+        return _member
+
+
+
+
+
 
 
 

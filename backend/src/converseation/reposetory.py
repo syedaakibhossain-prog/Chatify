@@ -3,6 +3,8 @@ import uuid
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
+
+from src.cache.cache import CacheService
 from src.model import Conversation, Member, Message, User
 
 
@@ -13,6 +15,11 @@ class ConversetionRepo:
     Provides async query methods for creating conversations, checking membership,
     fetching conversation lists, and marking messages as read.
     """
+    def __init__(
+        self,
+        cache:CacheService
+    ) -> None:
+        self.cache = cache
 
     async def create_conversation_with_member(
         self,
@@ -75,8 +82,8 @@ class ConversetionRepo:
 
             )
         )
+        responce = query.scalar() is not None
 
-        responce = query.scalar()
 
         return bool(responce)
 

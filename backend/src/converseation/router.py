@@ -3,6 +3,9 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.src.cache.cache import CacheService
+from backend.src.redis.redisClient import get_redis
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.schemas import ConversationResponse
 from src.converseation.service import ConversationService
@@ -35,11 +38,18 @@ def get_user_service() -> UserService:
 user_service = Annotated[UserService , Depends(get_user_service)]
 
 def get_conversation_service(service:user_service) -> ConversationService:
-    coversation_repo = ConversetionRepo()
+    coversation_repo = ConversetionRepo(
+        CacheService(
+            get_redis
+        )
+    )
 
     return ConversationService(
         coversation_repo,
-        service
+        service,
+        CacheService(
+            get_redis
+        )
     )
 
 conversation = Annotated[ConversationService , Depends(get_conversation_service)]

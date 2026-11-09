@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+
 from src.config import settings
 
 
@@ -15,7 +16,6 @@ class BaseModel(DeclarativeBase):
     from this class. SQLAlchemy uses it to track metadata and generate
     the schema via `BaseModel.metadata.create_all()`.
     """
-    pass
 
 
 DATABASE_URL = settings.DATABASE_URL

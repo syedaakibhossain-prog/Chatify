@@ -3,6 +3,9 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.cache.cache import CacheService
+from src.redis.redisClient import get_redis
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.service import ConversationService
 from src.database import get_db
@@ -16,11 +19,15 @@ from src.redis.ratelimits import MESSAGE_HISTORY
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
 
+
 router = APIRouter(
     prefix="/api/v1/message",
     tags=["message"]
 )
 
+cache = CacheService(
+    get_redis
+)
 
 DbSession = Annotated[AsyncSession , Depends(get_db)]
 AccessToken : TypeAlias = Annotated[str | None , Cookie()]
@@ -32,11 +39,14 @@ def get_user_service() -> UserService:
     )
 user_service = Annotated[UserService,Depends(get_user_service)]
 def get_con_service(user_service:user_service) -> ConversationService:
-    conn_service = ConversetionRepo()
+    conn_service = ConversetionRepo(
+        cache=cache
+    )
 
     return ConversationService(
         conn_service,
-        user_service
+        user_service,
+        cache
     )
 
 conversation_service = Annotated[ConversationService , Depends(get_con_service)]

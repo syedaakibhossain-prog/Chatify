@@ -38,3 +38,9 @@ class UserResponse(BaseModel):
     email: EmailStr
     acces_token: str | None = None
     refresh_token: str | None = None
+
+# class ResetPassword(LoginRequest):
+#     new_password: str = Field(
+#         min_length=8,
+#         max_length=128
+#     )

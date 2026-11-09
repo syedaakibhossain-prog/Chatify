@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.message.schemas import MessageOut, Messages
 from src.model import Message
 
