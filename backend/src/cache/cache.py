@@ -1,11 +1,10 @@
 import json
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from cachetools import TTLCache
 from fastapi import Depends
-
-from src.redis.redisClient import get_redis
+from src.redis.redisClient import RedisClient, get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ class CacheService:
 
     def __init__(
         self,
-        redis_client:Depends(get_redis)
+        redis_client:Annotated[RedisClient,Depends(get_redis)]
     ) -> None:
 
         self._redis = redis_client
@@ -40,7 +39,7 @@ class CacheService:
 
         raw = await self._redis.get(key)
         if raw:
-            data = json.dumps(raw)
+            data = json.loads(raw)
 
             _local_cache[key] = data
 

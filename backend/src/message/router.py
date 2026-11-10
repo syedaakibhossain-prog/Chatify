@@ -3,9 +3,7 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.cache.cache import CacheService
-from src.redis.redisClient import get_redis
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.service import ConversationService
 from src.database import get_db
@@ -16,9 +14,9 @@ from src.message.service import MessageService
 from src.model import User
 from src.redis.ratelimiter import rate_limit
 from src.redis.ratelimits import MESSAGE_HISTORY
+from src.redis.redisClient import get_redis
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
-
 
 router = APIRouter(
     prefix="/api/v1/message",

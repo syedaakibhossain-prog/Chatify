@@ -9,7 +9,6 @@ from fastapi import (
     status,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.authentication.reposetory import (
     UserRepository,
 )

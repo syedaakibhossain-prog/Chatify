@@ -1,8 +1,9 @@
 import uuid
 
+from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from src.cache.cache import CacheService
 from src.model import User
 from src.user.schemas import UserResults, UserSearchResults
 
@@ -14,6 +15,14 @@ class UserRepo:
     Returns schema objects (UserSearchResults, UserResults) rather than raw ORM
     models, providing a clean separation between the database layer and the service layer.
     """
+
+    def __init__(
+        self,
+        cahe_ser:CacheService,
+        background_task:BackgroundTasks
+    ) -> None:
+        self.cahe_ser = cahe_ser
+        self.background_task = background_task
 
     async def get_user_by_name(
         self,
@@ -49,7 +58,8 @@ class UserRepo:
     async def get_user_by_id(
         self,
         db:AsyncSession,
-        user_id:uuid.UUID
+        user_id:uuid.UUID,
+        cahe_key:str
     ) ->UserResults | None:
         """
         Looks up a user by their UUID and returns a minimal result schema.
@@ -72,7 +82,16 @@ class UserRepo:
         if res is None:
             return None
 
-        return UserResults(
+        results = UserResults(
             id=res.id,
             username=res.username
         )
+
+        self.background_task.add_task(
+            self.cahe_ser._set,
+            cahe_key,
+            results.model_dump(mode="json")
+        )
+
+
+        return results

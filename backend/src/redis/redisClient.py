@@ -1,5 +1,4 @@
 import redis.asyncio as redis
-
 from src.config import settings
 
 
