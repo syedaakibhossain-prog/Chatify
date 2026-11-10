@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 import redis.asyncio as redis
 from fastapi import Depends, HTTPException, Request, status
-
 from src.config import settings
 from src.redis.redisClient import get_redis
 

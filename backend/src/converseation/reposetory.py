@@ -3,7 +3,6 @@ import uuid
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
-
 from src.cache.cache import CacheService
 from src.model import Conversation, Member, Message, User
 

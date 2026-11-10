@@ -3,7 +3,6 @@ from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.authentication.reposetory import (
     UserRepository,
 )

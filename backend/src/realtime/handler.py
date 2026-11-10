@@ -3,7 +3,6 @@ from typing import Any
 
 from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.converseation.service import ConversationService
 from src.message.service import MessageService
 from src.model import User

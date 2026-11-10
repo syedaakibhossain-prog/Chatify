@@ -3,9 +3,6 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from backend.src.cache.cache import CacheService
-from backend.src.redis.redisClient import get_redis
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.schemas import ConversationResponse
 from src.converseation.service import ConversationService
@@ -18,6 +15,9 @@ from src.redis.ratelimiter import rate_limit
 from src.redis.ratelimits import CONVERSATION_CREATE, CONVERSATION_LIST
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
+
+from backend.src.cache.cache import CacheService
+from backend.src.redis.redisClient import get_redis
 
 router = APIRouter(
     prefix="/api/v1/conversation",

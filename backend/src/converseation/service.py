@@ -3,7 +3,6 @@ from typing import Annotated, TypeAlias
 
 from fastapi import Cookie, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.cache.cache import CacheService
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.schemas import ConversationResponse
