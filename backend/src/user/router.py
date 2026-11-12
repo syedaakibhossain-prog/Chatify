@@ -7,10 +7,9 @@ from src.dependences import get_user
 from src.model import User
 from src.redis.ratelimiter import rate_limit
 from src.redis.ratelimits import USER_SEARCH
-from src.user.reposetory import UserRepo
+from src.sharede_dependencies.shared_dep import get_user_service
 from src.user.schemas import UserSearchResults
 from src.user.service import UserService
-from src.sharede_dependencies.shared_dep import get_user_service
 
 router = APIRouter(
     prefix="/user",
