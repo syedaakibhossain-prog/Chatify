@@ -8,7 +8,7 @@ from src.redis.redisClient import RedisClient, get_redis
 from src.user.router import get_user_service
 from src.user.service import UserService
 
-from backend.src.user.reposetory import UserRepo
+from src.user.reposetory import UserRepo
 
 user_service = Annotated[UserService , Depends(get_user_service)]
 redis = Annotated[RedisClient , Depends(get_redis)]
