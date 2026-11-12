@@ -5,7 +5,6 @@ from src.cache.cache import CacheService
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.service import ConversationService
 from src.redis.redisClient import RedisClient, get_redis
-from src.user.router import get_user_service
 from src.user.service import UserService
 
 from src.user.reposetory import UserRepo
