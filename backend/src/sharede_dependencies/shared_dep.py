@@ -5,29 +5,10 @@ from src.cache.cache import CacheService
 from src.converseation.reposetory import ConversetionRepo
 from src.converseation.service import ConversationService
 from src.redis.redisClient import RedisClient, get_redis
+from src.user.reposetory import UserRepo
 from src.user.service import UserService
 
-from src.user.reposetory import UserRepo
-
-user_service = Annotated[UserService , Depends(get_user_service)]
 redis = Annotated[RedisClient , Depends(get_redis)]
-
-def get_conversation_service(
-    service:user_service,
-    redis:redis
-) -> ConversationService:
-    conversation_repo = ConversetionRepo(
-        CacheService(
-            redis
-        )
-    )
-    return ConversationService(
-        conversation_repo=conversation_repo,
-        user_service=service,
-        _cache_service=CacheService(
-            redis
-        )
-    )
 
 def get_user_service(
     background_task:BackgroundTasks,
@@ -43,6 +24,25 @@ def get_user_service(
     return UserService(
         user_repo,
         cache_ser=CacheService(
+            redis
+        )
+    )
+
+user_service = Annotated[UserService , Depends(get_user_service)]
+
+def get_conversation_service(
+    service:user_service,
+    redis:redis
+) -> ConversationService:
+    conversation_repo = ConversetionRepo(
+        CacheService(
+            redis
+        )
+    )
+    return ConversationService(
+        conversation_repo=conversation_repo,
+        user_service=service,
+        _cache_service=CacheService(
             redis
         )
     )
