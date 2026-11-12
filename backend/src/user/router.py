@@ -10,6 +10,7 @@ from src.redis.ratelimits import USER_SEARCH
 from src.user.reposetory import UserRepo
 from src.user.schemas import UserSearchResults
 from src.user.service import UserService
+from src.sharede_dependencies.shared_dep import get_user_service
 
 router = APIRouter(
     prefix="/user",
@@ -18,11 +19,11 @@ router = APIRouter(
 
 DBsession = Annotated[AsyncSession , Depends(get_db)]
 
-def get_user_service():
-    user_repo = UserRepo()
-    return UserService(
-        user_repo
-    )
+# def get_user_service():
+#     user_repo = UserRepo()
+#     return UserService(
+#         user_repo
+#     )
 user_service = Annotated[UserService , Depends(get_user_service)]
 
 @router.get(
