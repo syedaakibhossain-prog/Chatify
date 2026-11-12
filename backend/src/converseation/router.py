@@ -3,7 +3,6 @@ from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.converseation.reposetory import ConversetionRepo
 from src.converseation.schemas import ConversationResponse
 from src.converseation.service import ConversationService
 from src.database import get_db
@@ -13,11 +12,11 @@ from src.realtime.manager import manager
 from src.realtime.schemas import outbound
 from src.redis.ratelimiter import rate_limit
 from src.redis.ratelimits import CONVERSATION_CREATE, CONVERSATION_LIST
-from src.user.reposetory import UserRepo
+from src.sharede_dependencies.shared_dep import (
+    get_conversation_service,
+    get_user_service,
+)
 from src.user.service import UserService
-
-from backend.src.cache.cache import CacheService
-from backend.src.redis.redisClient import get_redis
 
 router = APIRouter(
     prefix="/api/v1/conversation",
@@ -28,29 +27,33 @@ Dbsession = Annotated[AsyncSession , Depends(get_db)]
 
 AccessToken : TypeAlias = Annotated[str | None , Cookie()]
 
-def get_user_service() -> UserService:
-    user_repo = UserRepo()
-
-    return UserService(
-        user_repo
-    )
+# def get_user_service() -> UserService:
+#     user_repo = UserRepo()
+#
+#     return UserService(
+#         user_repo
+#     )
 
 user_service = Annotated[UserService , Depends(get_user_service)]
 
-def get_conversation_service(service:user_service) -> ConversationService:
-    coversation_repo = ConversetionRepo(
-        CacheService(
-            get_redis
-        )
-    )
-
-    return ConversationService(
-        coversation_repo,
-        service,
-        CacheService(
-            get_redis
-        )
-    )
+# def get_conversation_service(service:user_service) -> ConversationService:
+#     coversation_repo = ConversetionRepo(
+#         CacheService(
+#             get_redis(
+#                 RedisClient()
+#             )
+#         )
+#     )
+#
+#     return ConversationService(
+#         coversation_repo,
+#         service,
+#         CacheService(
+#             get_redis(
+#                 RedisClient()
+#             )
+#         )
+#     )
 
 conversation = Annotated[ConversationService , Depends(get_conversation_service)]
 

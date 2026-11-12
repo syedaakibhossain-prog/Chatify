@@ -16,6 +16,10 @@ from src.realtime.schemas import outbound
 from src.redis.redisClient import get_redis
 from src.user.reposetory import UserRepo
 from src.user.service import UserService
+from src.sharede_dependencies.shared_dep import (
+    get_user_service,
+    get_conversation_service
+)
 
 DbSession: TypeAlias = Annotated[AsyncSession, Depends(get_db)]
 AccessToken: TypeAlias = Annotated[str | None, Cookie()]
@@ -23,21 +27,21 @@ AccessToken: TypeAlias = Annotated[str | None, Cookie()]
 
 
 
-def get_user_service() -> UserService:
-    return UserService(UserRepo())
+# def get_user_service() -> UserService:
+#     return UserService(UserRepo())
 
 
 UserServiceDep: TypeAlias = Annotated[UserService, Depends(get_user_service)]
 
 
-def get_conversation_service(
-    user_ser: UserServiceDep,
-) -> ConversationService:
-    return ConversationService(ConversetionRepo(
-        CacheService(get_redis)),
-        user_ser,
-        CacheService(get_redis)
-    )
+# def get_conversation_service(
+#     user_ser: UserServiceDep,
+# ) -> ConversationService:
+#     return ConversationService(ConversetionRepo(
+#         CacheService(get_redis)),
+#         user_ser,
+#         CacheService(get_redis)
+#     )
 
 
 ConversationServiceDep: TypeAlias = Annotated[
